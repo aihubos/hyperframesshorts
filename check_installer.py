@@ -42,3 +42,20 @@ with tempfile.TemporaryDirectory() as scratch:
     assert (existing / 'keep.txt').read_text() == 'existing engine skill'
     assert not (root / 'runtime').exists()
 print('PASS: CLI installs shorts skill without changing existing hyperframes or installing an engine.')
+
+# A unified setup must reuse a working project engine without invoking npm.
+with tempfile.TemporaryDirectory() as scratch:
+    root = Path(scratch)
+    cli = root / 'existing/node_modules/hyperframes/bin/hyperframes.mjs'
+    cli.parent.mkdir(parents=True)
+    cli.write_text('// existing engine')
+    with patch.object(installer, 'existing_engine', return_value=cli), patch.object(installer.shutil, 'which', side_effect=lambda name: '/tools/' + name), patch.object(installer.subprocess, 'check_output', return_value='v22.0.0'), patch.object(installer.subprocess, 'run') as run:
+        installer.setup_runtime(root / 'unused', reuse_existing=True)
+        assert not (root / 'unused').exists()
+        assert [call.args[0] for call in run.call_args_list] == [['node', str(cli), '--version'], ['node', str(cli), 'browser', 'ensure']]
+    with patch.object(sys, 'argv', ['install.py', '--setup', '--skills-dir', str(root/'skills')]), patch.object(installer, 'setup_runtime') as engine, patch.object(installer, 'install_skill') as skill, patch.object(installer.subprocess, 'run') as voice:
+        installer.main()
+        assert engine.call_args.kwargs['reuse_existing'] is True
+        skill.assert_called_once()
+        assert voice.call_args.args[0][-1].endswith('scripts/setup_voice.py')
+print('PASS: unified setup reuses the engine and invokes the shared skill/voice pipeline.')

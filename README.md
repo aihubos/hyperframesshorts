@@ -10,10 +10,10 @@ Codex 또는 Claude Code에 아래 문장을 전달하세요.
 
 ```text
 https://github.com/aihubos/hyperframesshorts 저장소를 확인하고 README.md대로 내 에이전트에 설치해줘.
-Hyperframes는 이미 설치되어 있으니 기존 엔진을 재사용하고 엔진을 재설치하거나 업데이트하지 마.
+Hyperframes가 이미 있으면 재사용하고, 없을 때만 설치해줘. 기존 엔진을 업데이트하지 마.
 기존 hyperframes 스킬은 보존하고 hyperframesshorts만 추가해줘.
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
-python3 install.py --setup-voice로 VoiceStudio와 VoxCPM2도 준비해줘.
+macOS는 python3 install.py --setup, Windows는 py -3 install.py --setup으로 동일한 설치 흐름을 실행해줘.
 처음에는 포함된 제작자 공유 목소리를 자동 등록해줘. 기존에 내가 선택한 목소리가 있으면 유지해줘.
 나레이션은 생성 원본 대비 1.2배속을 한 번 적용하고 그 음성에 자막을 맞춰줘.
 Flow는 Aside 브라우저와 컴퓨터 유즈를 우선 사용하고 화면을 점유하지 않는 백그라운드 방식으로 작업해줘.
@@ -21,17 +21,17 @@ Aside의 백그라운드 제어가 지원되지 않으면 그 제약을 알리�
 영상·이미지 생성 도구와 내 계정 연결 상태도 확인해줘.
 ```
 
-## 직접 설치 — Hyperframes가 이미 있는 경우
+## 공통 설치 — macOS와 Windows
 
-Git과 Python 3가 필요합니다. 공개 저장소를 받는 데 GitHub 계정이나 `gh` 설치는 필요하지 않습니다.
+Git, Python 3, Node.js 22 이상, FFmpeg/ffprobe가 필요합니다. 없으면 아래 OS별 준비 명령으로 설치한 후 진행합니다. 공개 저장소를 받는 데 GitHub 계정이나 `gh` 설치는 필요하지 않습니다.
 
 ```bash
 git clone https://github.com/aihubos/hyperframesshorts.git
 cd hyperframesshorts
-python3 install.py --setup-voice
+python3 install.py --setup
 ```
 
-`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS / Windows x64)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
+`--setup`은 기존 Hyperframes 탐색·재사용(없으면 설치) → 스킬 설치 → VoiceStudio 앱(Apple Silicon macOS / Windows x64)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
 
 옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
@@ -122,7 +122,7 @@ MIT 라이선스로 배포하는 워크플로 문서와 설치 프로그램만 �
 
 ## Windows 10/11 x64 설치
 
-macOS와 동일한 흐름입니다: **스킬 → VoiceStudio → VoxCPM2 → 공유 목소리 → 나레이션 1.2배속**. Whisper는 이 설치 명령에서 별도 설치하지 않습니다.
+macOS와 동일한 흐름입니다: **기본 도구 확인 → Hyperframes 재사용/설치 → 스킬 → VoiceStudio → VoxCPM2 → 공유 목소리 → 나레이션 1.2배속**. Whisper는 이 설치 명령에서 별도 설치하지 않습니다.
 
 Git, Python 3, FFmpeg/ffprobe가 없다면 PowerShell에서 필요한 항목만 설치하세요. 엔진도 준비할 경우 Node.js 22 이상이 필요합니다.
 
@@ -138,9 +138,7 @@ winget install --id OpenJS.NodeJS.LTS -e
 ```powershell
 git clone https://github.com/aihubos/hyperframesshorts.git
 cd hyperframesshorts
-py -3 install.py --setup-voice
-# Hyperframes 엔진도 없는 경우 위 명령 대신:
-# py -3 install.py --setup-runtime --setup-voice
+py -3 install.py --setup
 ```
 
 VoiceStudio가 없으면 공식 **0.5.2 Current User MSI**를 받아 사용자별로 설치하고 실행합니다. 기존 설치는 재사용합니다. 초기 앱 설정·OS 승인·네트워크 다운로드가 끝나지 않으면 안내에 따라 같은 명령을 다시 실행하세요. 자동 재부팅이나 보안 설정 변경은 하지 않습니다. Windows ARM/32비트는 자동 설치 대상이 아닙니다.
@@ -152,3 +150,31 @@ VoiceStudio가 없으면 공식 **0.5.2 Current User MSI**를 받아 사용자�
 - 사용자 지정 환경: `HYPERFRAMES_VOICESTUDIO_APP`에 앱 EXE, `HYPERFRAMES_VOICESTUDIO_PYTHON`에 실제 Python 경로를 지정할 수 있습니다. 관리 환경의 `uv`를 재사용합니다.
 
 Flow 로그인, Aside 설치·제어 연결, 음악·폰트는 별도 준비합니다. Windows에서도 Aside 우선 규칙은 같지만 Aside의 해당 OS 지원 및 도구 연결을 확인해야 합니다. 앱 설치만으로 백그라운드 브라우저 제어가 가능해지지는 않습니다.
+
+## 두 OS의 동일한 setup 순서
+
+Docker 없이 각 OS에 직접 설치합니다. 차이는 Python 실행 명령과 앱 설치 파일(.app / MSI)뿐입니다.
+
+| 단계 | macOS Apple Silicon / Windows x64 공통 동작 |
+| --- | --- |
+| 1 | Node.js 22+, FFmpeg, ffprobe 확인. 없으면 준비 방법을 알리고 중단 |
+| 2 | 지정 runtime 경로·현재 폴더의 상위 프로젝트·PATH에서 Hyperframes 탐색, 기존 엔진 재사용 또는 없을 때 0.8.35 설치 |
+| 3 | 렌더링 브라우저 준비, 기존 스킬 백업 후 설치 |
+| 4 | 기존 VoiceStudio 재사용 또는 공식 앱 설치·실행 |
+| 5 | VoxCPM2 준비, 기존 목소리 유지 또는 포함된 공유 목소리 등록 |
+| 6 | 내레이션 원본 대비 1.2배속 설정 저장 |
+
+```bash
+# macOS (Homebrew가 있는 경우, 없는 기본 도구만 준비)
+brew install git python node ffmpeg
+python3 install.py --setup
+```
+
+```powershell
+# Windows (위 winget 준비 후 새 PowerShell에서)
+py -3 install.py --setup
+```
+
+기존 엔진이 자동 탐색 범위 밖에 있으면 `--runtime-dir "기존 프로젝트 경로"`를 함께 지정하세요. 최초 VoiceStudio 설정이 끝나지 않았다면 화면에서 완료하고 같은 setup 명령으로 재개합니다. 서비스 로그인·음악·폰트 준비는 두 OS 모두 별도입니다. Whisper와 Docker는 설치하지 않습니다.
+
+기존 세부 옵션도 유지합니다: 옵션 없음은 스킬만 설치, `--setup-voice`는 스킬+음성 환경만, `--setup-runtime`은 지정된 별도 엔진 환경을 준비합니다.
