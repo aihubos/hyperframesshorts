@@ -14,6 +14,8 @@ import urllib.error
 
 API = 'http://127.0.0.1:3900'
 MODEL = 'openbmb/VoxCPM2'
+BUNDLED = Path(__file__).resolve().parent.parent / 'assets/voice'
+BUNDLED_NAME = 'Hyperframes Shorts Shared Voice'
 CONFIG = Path.home() / '.config/hyperframesshorts/voice.json'
 
 
@@ -93,6 +95,15 @@ def register_voice(audio, transcript, name):
     return json.loads(result)
 
 
+def bundled_voice():
+    transcript = (BUNDLED / 'transcript.txt').read_text(encoding='utf-8').strip()
+    profiles = api('/profiles')
+    for profile in profiles if isinstance(profiles, list) else profiles.get('profiles', []):
+        if profile['name'] == BUNDLED_NAME and profile.get('ref_text', '').strip() == transcript:
+            return profile['id']
+    return register_voice(BUNDLED / 'reference.wav', BUNDLED / 'transcript.txt', BUNDLED_NAME)['id']
+
+
 def save_config(profile_id):
     CONFIG.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(mode='w', dir=CONFIG.parent, delete=False, encoding='utf-8') as out:
@@ -106,6 +117,7 @@ def save_config(profile_id):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     group = p.add_mutually_exclusive_group()
+    group.add_argument('--bundled-voice', action='store_true', help='Select the creator-shared voice bundled with this skill.')
     group.add_argument('--profile-id', help='Use only the voice explicitly selected by the user.')
     group.add_argument('--voice-audio', type=Path, help='Locally supplied voice reference, ideally 5–15 seconds.')
     p.add_argument('--voice-text', type=Path, help='UTF-8 exact transcript matching the entire reference.')
@@ -118,11 +130,13 @@ def main():
     ensure_app()
     install_model()
     profile_id = args.profile_id
-    if not profile_id and not args.voice_audio and CONFIG.exists():
+    if not profile_id and not args.voice_audio and not args.bundled_voice and CONFIG.exists():
         profile_id = json.loads(CONFIG.read_text(encoding='utf-8')).get('profile_id')
     if args.voice_audio:
         profile = register_voice(args.voice_audio, args.voice_text, args.voice_name)
         profile_id = profile['id']
+    if not profile_id and not args.voice_audio:
+        profile_id = bundled_voice()
     if profile_id:
         api('/profiles/' + urllib.parse.quote(profile_id, safe=''))
         save_config(profile_id)

@@ -21,7 +21,7 @@ def install_skill(target):
     stage = Path(tempfile.mkdtemp(prefix=f'.{SKILL_NAME}-', dir=target.parent))
     backup = None
     try:
-        for name in ('SKILL.md', 'agents', 'references', 'scripts', 'LICENSE'):
+        for name in ('SKILL.md', 'agents', 'references', 'scripts', 'assets', 'LICENSE'):
             src = SOURCE / name
             if src.is_dir():
                 shutil.copytree(src, stage / name, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))

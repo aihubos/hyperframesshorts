@@ -50,3 +50,13 @@ with tempfile.TemporaryDirectory() as scratch:
     else:
         raise AssertionError('Double speed application was not blocked')
 print('PASS: model reuse/download routing, private config, real 1.2x duration and double-application guard.')
+
+transcript = (setup.BUNDLED / 'transcript.txt').read_text().strip()
+with patch.object(setup, 'api', return_value=[]), patch.object(setup, 'register_voice', return_value={'id': 'new'}) as register:
+    assert setup.bundled_voice() == 'new'
+    assert register.call_count == 1
+with patch.object(setup, 'api', return_value=[{'id': 'existing', 'name': setup.BUNDLED_NAME, 'ref_text': transcript}]), patch.object(setup, 'register_voice') as register:
+    assert setup.bundled_voice() == 'existing'
+    register.assert_not_called()
+assert 7 < speed.duration(setup.BUNDLED / 'reference.wav') < 9
+print('PASS: bundled audio exists; new voice registers and existing matching voice is reused.')

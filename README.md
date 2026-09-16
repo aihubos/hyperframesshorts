@@ -14,7 +14,7 @@ Hyperframes는 이미 설치되어 있으니 기존 엔진을 재사용하고 �
 기존 hyperframes 스킬은 보존하고 hyperframesshorts만 추가해줘.
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
 python3 install.py --setup-voice로 VoiceStudio와 VoxCPM2도 준비해줘.
-목소리는 나에게 물어 선택하고, 내가 제공한 참조 음성이 있으면 로컬에 자동 등록해줘.
+처음에는 포함된 제작자 공유 목소리를 자동 등록해줘. 기존에 내가 선택한 목소리가 있으면 유지해줘.
 나레이션은 생성 원본 대비 1.2배속을 한 번 적용하고 그 음성에 자막을 맞춰줘.
 영상·이미지 생성 도구와 내 계정 연결 상태도 확인해줘.
 ```
@@ -29,7 +29,7 @@ cd hyperframesshorts
 python3 install.py --setup-voice
 ```
 
-`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 목소리는 선택하거나 별도 파일로 등록합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
+`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
 
 옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
@@ -108,8 +108,8 @@ python3 install.py --setup-runtime
 
 ## 포함 범위와 확인
 
-MIT 라이선스로 배포하는 워크플로 문서와 설치 프로그램만 포함합니다. 공식 엔진·생성 모델·이미지·영상·음성·음악·폰트는 포함하지 않으며 해당 서비스와 자산의 조건을 따릅니다. API 키·쿠키·개인 파일도 포함하지 않습니다.
+MIT 라이선스로 배포하는 워크플로 문서와 설치 프로그램만 포함합니다. 공식 엔진·생성 모델·이미지·영상·음악·폰트는 포함하지 않으며 해당 서비스와 자산의 조건을 따릅니다. 공개 승인된 목소리 참조와 녹취는 `assets/voice/`에 포함합니다. API 키·쿠키·그 밖의 개인 파일은 포함하지 않습니다.
 
 `python3 check_installer.py`로 임시 폴더에서 설치와 기존 폴더/심볼릭 링크 보존을 확인할 수 있습니다. 패키지와 설치 확인은 수신자 계정에서 실제 영상 생성·렌더링까지 성공했다는 의미는 아닙니다.
 
-음성 자동 설정 확인: `python3 check_voice.py`. 앱 최초 설치와 다른 OS는 별도 환경에서 검증이 필요합니다. 개인 목소리 파일은 GitHub에 포함되지 않으므로 동일 목소리를 공유하려면 참조 음성과 정확한 녹취를 별도로 전달하세요.
+음성 자동 설정 확인: `python3 check_voice.py`. 앱 최초 설치와 다른 OS는 별도 환경에서 검증이 필요합니다. 제작자 공유 목소리는 [assets/voice](assets/voice/)에 포함되어 자동 등록됩니다. `python3 scripts/setup_voice.py --bundled-voice`로 명시적으로 선택할 수도 있습니다.
