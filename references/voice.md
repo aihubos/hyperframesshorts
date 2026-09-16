@@ -5,9 +5,10 @@
 저장소에서 `python3 install.py --setup-voice`를 실행한다. 기존 Hyperframes는 그대로 두고 스킬, VoiceStudio, VoxCPM2 순서로 준비한다. 이미 설치되어 실행 중인 VoiceStudio와 다운로드된 모델은 재사용한다.
 
 - Apple Silicon macOS: 앱이 없으면 VoiceStudio 공식 v0.5.2 설치 프로그램으로 설치하고 실행한다. macOS의 최초 앱 실행 승인과 앱 초기 설정은 사용자가 완료해야 할 수 있다. 보안 설정을 해제하지 않는다. 초기 설정 후 같은 명령으로 재개한다.
-- Windows/Linux/Intel Mac: 앱 설치는 [공식 다운로드](https://voicestudio.sh/download)의 지원 범위를 따른다. 이 패키지의 데스크톱 자동 설치는 Apple Silicon macOS만 지원한다. 로컬 API가 실행되면 모델/목소리 설정 코드는 재사용할 수 있지만 다른 OS 실행은 검증하지 않았다.
+- Windows 10/11 x64: `py -3 install.py --setup-voice`로 공식 Current User MSI 설치·실행 후 같은 모델과 공유 목소리를 설정한다. 기존 설치를 재사용하며 최초 앱 설정 후 재실행이 필요할 수 있다.
+- Linux/Intel Mac: 앱 설치는 [공식 다운로드](https://voicestudio.sh/download)의 지원 범위를 따른다. 이 패키지의 데스크톱 자동 설치는 Apple Silicon macOS와 Windows x64를 지원한다. 로컬 API가 실행되면 모델/목소리 설정 코드는 재사용할 수 있지만 Windows 실기 설치·생성은 아직 검증하지 않았다.
 - API 기준: `http://127.0.0.1:3900`. 포트가 다르거나 인증을 요구하는 설치는 실제 설정을 먼저 확인한다. 원격 서버로 개인 음성을 임의 전송하지 않는다.
-- VoxCPM2 패키지가 없으면 macOS의 기존 VoiceStudio 관리 환경에서 `uv pip install --python <VoiceStudio Python 경로> 'voxcpm>=2.0.3'`를 실행한다. 탐지하지 못한 환경에서는 에이전트가 실제 Python 환경을 찾아 공식 [엔진 안내](https://github.com/debpalash/VoiceStudio/blob/main/docs/engines/voxcpm2.md)를 따른다. 시스템 Python에 무작정 설치하지 않는다.
+- VoxCPM2 패키지가 없으면 각 OS의 기존 VoiceStudio 관리 환경에서 `uv pip install --python <VoiceStudio Python 경로> 'voxcpm>=2.0.3'`를 실행한다. 탐지하지 못한 환경에서는 에이전트가 실제 Python 환경을 찾아 공식 [엔진 안내](https://github.com/debpalash/VoiceStudio/blob/main/docs/engines/voxcpm2.md)를 따른다. 시스템 Python에 무작정 설치하지 않는다.
 - 모델은 `openbmb/VoxCPM2` 약 5GB를 공식 모델 API로 다운로드하고 TTS 엔진을 `voxcpm2`로 선택한다. 실패 시 다른 모델로 대체하지 않는다.
 
 VoiceStudio 앱은 AGPL-3.0, [VoxCPM2 모델](https://huggingface.co/openbmb/VoxCPM2)은 Apache-2.0이다. 서로 다른 라이선스이며 이 저장소에 앱이나 모델 가중치를 재배포하지 않는다.
@@ -41,3 +42,5 @@ python3 scripts/speed_voice.py /절대경로/나레이션_원본.wav /절대경�
 - 보조 프로그램은 원본과 기존 출력물을 덮어쓰지 않고 길이·배속 기록을 출력 옆 JSON에 저장한다. 별도 도구로 이미 가속한 파일은 기록이 없을 수 있으므로 원본 출처도 확인한다.
 - 최종 가속 음성으로 발화 정렬을 수행한 뒤 자막과 장면 길이를 결정한다. 배경음악은 정상 속도로 반복하고 따로 믹싱한다.
 - 제작정보에 엔진/모델, 선택 목소리 이름, 원본 길이, 실제 1.2배 적용과 결과 길이를 기록한다. 생성 성공·목소리 선택·재생 확인을 구분한다.
+
+Windows에서 Python 명령은 `py -3`, 경로는 `%USERPROFILE%` 기준이다. 앱 또는 Python 환경이 사용자 지정 경로에 있으면 `HYPERFRAMES_VOICESTUDIO_APP` / `HYPERFRAMES_VOICESTUDIO_PYTHON`을 사용한다. Python 탐지는 앱 config.json의 env_dir도 반영한다. portable 또는 앱의 비ASCII 경로 우회 환경은 실제 Python 경로를 지정한다. 이 설치 명령에는 Whisper 추가 설치가 포함되지 않는다.

@@ -31,7 +31,7 @@ cd hyperframesshorts
 python3 install.py --setup-voice
 ```
 
-`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
+`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS / Windows x64)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
 
 옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
@@ -47,7 +47,7 @@ python3 install.py --skills-dir "$HOME/.agents/skills"
 
 앱마다 검색 경로가 다릅니다. 같은 스킬을 여러 검색 경로에 중복 설치할 필요는 없습니다. 자동 목록 반영은 앱 재시작 후 확인하세요. 즉시 적용하려면 AI에게 설치된 `SKILL.md`를 읽도록 요청하세요.
 
-Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 풀고 그 폴더에서 `python3 install.py`를 실행해도 됩니다. Windows에서 Python 명령이 `py`라면 `py install.py`를 사용하세요. 설치 프로그램의 실제 실행 검증 환경은 macOS이며 다른 OS에서의 렌더링까지 검증한 것은 아닙니다.
+Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 풀고 그 폴더에서 `python3 install.py`를 실행해도 됩니다. Windows에서 Python 명령이 `py`라면 `py install.py`를 사용하세요. 실제 앱 연동 검증은 macOS에서 수행했습니다. Windows 경로·설치 분기는 모의 확인했으며 Windows PC의 첫 설치·음성 생성·렌더링은 아직 실기 검증하지 않았습니다.
 
 ## 다른 스킬도 필요한가요?
 
@@ -119,3 +119,36 @@ MIT 라이선스로 배포하는 워크플로 문서와 설치 프로그램만 �
 ## Flow 브라우저 기본값
 
 **Aside 우선·백그라운드 작업**입니다. 스킬이 브라우저 연결 기능을 설치하는 것은 아닙니다. 현재 Aside 앱 화면 읽기는 확인했지만 완전한 백그라운드 입력·생성·다운로드는 미검증입니다. 지원되지 않으면 화면을 임의로 점유하거나 다른 브라우저로 전환하지 않고 필요한 선택만 안내합니다. [동작 기준](references/production.md#aside와-백그라운드-작업)을 참고하세요.
+
+## Windows 10/11 x64 설치
+
+macOS와 동일한 흐름입니다: **스킬 → VoiceStudio → VoxCPM2 → 공유 목소리 → 나레이션 1.2배속**. Whisper는 이 설치 명령에서 별도 설치하지 않습니다.
+
+Git, Python 3, FFmpeg/ffprobe가 없다면 PowerShell에서 필요한 항목만 설치하세요. 엔진도 준비할 경우 Node.js 22 이상이 필요합니다.
+
+```powershell
+winget install --id Git.Git -e
+winget install --id Python.Python.3.11 -e
+winget install --id Gyan.FFmpeg -e
+winget install --id OpenJS.NodeJS.LTS -e
+```
+
+설치 후 PowerShell을 새로 열고 실행합니다. 이미 받은 저장소는 다시 복제하지 않고 `git pull --ff-only`로 업데이트합니다.
+
+```powershell
+git clone https://github.com/aihubos/hyperframesshorts.git
+cd hyperframesshorts
+py -3 install.py --setup-voice
+# Hyperframes 엔진도 없는 경우 위 명령 대신:
+# py -3 install.py --setup-runtime --setup-voice
+```
+
+VoiceStudio가 없으면 공식 **0.5.2 Current User MSI**를 받아 사용자별로 설치하고 실행합니다. 기존 설치는 재사용합니다. 초기 앱 설정·OS 승인·네트워크 다운로드가 끝나지 않으면 안내에 따라 같은 명령을 다시 실행하세요. 자동 재부팅이나 보안 설정 변경은 하지 않습니다. Windows ARM/32비트는 자동 설치 대상이 아닙니다.
+
+- 스킬: `%USERPROFILE%\.codex\skills\hyperframesshorts` (`CODEX_HOME` 지정 시 해당 경로 사용)
+- 설정: `%USERPROFILE%\.config\hyperframesshorts\voice.json`
+- 영상 저장: `%USERPROFILE%\Projects\Youtube\영상 제목`
+- VoiceStudio Python: `%LOCALAPPDATA%\com.debpalash.omnivoice-studio\project\.venv\Scripts\python.exe`
+- 사용자 지정 환경: `HYPERFRAMES_VOICESTUDIO_APP`에 앱 EXE, `HYPERFRAMES_VOICESTUDIO_PYTHON`에 실제 Python 경로를 지정할 수 있습니다. 관리 환경의 `uv`를 재사용합니다.
+
+Flow 로그인, Aside 설치·제어 연결, 음악·폰트는 별도 준비합니다. Windows에서도 Aside 우선 규칙은 같지만 Aside의 해당 OS 지원 및 도구 연결을 확인해야 합니다. 앱 설치만으로 백그라운드 브라우저 제어가 가능해지지는 않습니다.

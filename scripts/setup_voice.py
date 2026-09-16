@@ -2,6 +2,8 @@
 """Prepare VoiceStudio + VoxCPM2; keep voice selection private to this machine."""
 import argparse
 import json
+import os
+import uuid
 import platform
 from pathlib import Path
 import shutil
@@ -32,35 +34,80 @@ def ensure_app():
         return
     except urllib.error.URLError:
         pass
-    if platform.system() != 'Darwin' or platform.machine() != 'arm64':
-        raise RuntimeError('Install/start VoiceStudio using https://voicestudio.sh/download, then rerun. Automatic desktop installation supports Apple Silicon macOS only.')
-    apps = [Path('/Applications/VoiceStudio.app'), Path.home() / 'Applications/VoiceStudio.app']
-    app = next((p for p in apps if p.exists()), None)
-    if app is None:
-        with tempfile.TemporaryDirectory() as temp:
-            installer = Path(temp) / 'install.sh'
-            subprocess.run(['curl', '-fL', 'https://raw.githubusercontent.com/debpalash/VoiceStudio/v0.5.2/scripts/install.sh', '-o', str(installer)], check=True)
-            subprocess.run(['sh', str(installer), '--binary', '--version', '0.5.2'], check=True)
+    if platform.system() == 'Windows':
+        if platform.machine().lower() not in ('amd64', 'x86_64'):
+            raise RuntimeError('Automatic Windows installation requires Windows 10/11 x64.')
+        local = Path(os.environ.get('LOCALAPPDATA', Path.home() / 'AppData/Local'))
+        apps = [folder / exe for folder in (local / 'VoiceStudio (Current User)',
+                Path(os.environ.get('ProgramFiles', 'C:/Program Files')) / 'VoiceStudio')
+                for exe in ('omnivoice-studio.exe', 'VoiceStudio.exe')]
+        if os.environ.get('HYPERFRAMES_VOICESTUDIO_APP'):
+            apps.insert(0, Path(os.environ['HYPERFRAMES_VOICESTUDIO_APP']))
+        app = next((p for p in apps if p.is_file()), None)
+        if app is None:
+            # Official per-user MSI: no execution-policy or machine-wide settings changes.
+            with tempfile.TemporaryDirectory() as temp:
+                installer = Path(temp) / 'VoiceStudio.msi'
+                url = 'https://github.com/debpalash/VoiceStudio/releases/download/v0.5.2/VoiceStudio_Current_User_0.5.2_x64_en-US.msi'
+                print('Downloading official VoiceStudio 0.5.2 Windows installer...', flush=True)
+                urllib.request.urlretrieve(url, installer)
+                result = subprocess.run(['msiexec.exe', '/i', str(installer), '/passive', '/norestart'])
+                if result.returncode not in (0, 3010):
+                    raise RuntimeError(f'VoiceStudio MSI failed (code {result.returncode}); complete the official installer and rerun.')
+                if result.returncode == 3010:
+                    raise RuntimeError('Windows requests a restart. Restart when convenient, then rerun.')
+            app = next((p for p in apps if p.is_file()), None)
+        if app is None:
+            raise RuntimeError('Set HYPERFRAMES_VOICESTUDIO_APP to your installed VoiceStudio.exe path, then rerun.')
+        subprocess.Popen([str(app)])
+    elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+        apps = [Path('/Applications/VoiceStudio.app'), Path.home() / 'Applications/VoiceStudio.app']
         app = next((p for p in apps if p.exists()), None)
         if app is None:
-            raise RuntimeError('VoiceStudio app was not found after installation.')
-    subprocess.run(['open', '-g', str(app)], check=True)
+            with tempfile.TemporaryDirectory() as temp:
+                installer = Path(temp) / 'install.sh'
+                subprocess.run(['curl', '-fL', 'https://raw.githubusercontent.com/debpalash/VoiceStudio/v0.5.2/scripts/install.sh', '-o', str(installer)], check=True)
+                subprocess.run(['sh', str(installer), '--binary', '--version', '0.5.2'], check=True)
+            app = next((p for p in apps if p.exists()), None)
+            if app is None:
+                raise RuntimeError('VoiceStudio app was not found after installation.')
+        subprocess.run(['open', '-g', str(app)], check=True)
+    else:
+        raise RuntimeError('Install/start VoiceStudio using https://voicestudio.sh/download, then rerun. Automatic app installation supports Apple Silicon macOS and Windows x64.')
     for _ in range(30):
         try:
             api('/engines/tts')
             return
         except urllib.error.URLError:
             time.sleep(2)
-    raise RuntimeError('Complete the first-launch macOS approval and VoiceStudio setup, then rerun this command. No security settings were changed.')
+    raise RuntimeError('Complete the first-launch OS approval and VoiceStudio setup, then rerun this command. No security settings were changed.')
+
+
+def backend_tools():
+    windows = platform.system() == 'Windows'
+    if windows:
+        root = Path(os.environ.get('LOCALAPPDATA', Path.home() / 'AppData/Local')) / 'com.debpalash.omnivoice-studio'
+    else:
+        root = Path.home() / 'Library/Application Support/com.debpalash.omnivoice-studio'
+    config = root / 'config.json'
+    env_root = root
+    if config.is_file():
+        env_root = Path(json.loads(config.read_text(encoding='utf-8')).get('env_dir') or root)
+    python = Path(os.environ.get('HYPERFRAMES_VOICESTUDIO_PYTHON') or
+                  env_root / ('project/.venv/Scripts/python.exe' if windows else 'project/.venv/bin/python'))
+    executable = 'uv.exe' if windows else 'uv'
+    candidates = [shutil.which(executable), str(env_root / 'tools' / executable),
+                  str(root / 'tools' / executable), str(Path.home() / '.local/bin' / executable)]
+    uv = next((p for p in candidates if p and Path(p).is_file()), None)
+    if not python.is_file() or uv is None:
+        raise RuntimeError('Complete VoiceStudio first-run setup. For a custom/portable environment set HYPERFRAMES_VOICESTUDIO_PYTHON and put uv on PATH; see references/voice.md.')
+    return python, uv
 
 
 def install_model():
     health = api('/engines/voxcpm2/health')
     if not health.get('ok'):
-        python = Path.home() / 'Library/Application Support/com.debpalash.omnivoice-studio/project/.venv/bin/python'
-        uv = shutil.which('uv') or str(Path.home() / '.local/bin/uv')
-        if platform.system() != 'Darwin' or not python.exists() or not Path(uv).exists():
-            raise RuntimeError('Install voxcpm>=2.0.3 in the VoiceStudio Python environment, restart VoiceStudio, and rerun. See references/voice.md.')
+        python, uv = backend_tools()
         subprocess.run([uv, 'pip', 'install', '--python', str(python), 'voxcpm>=2.0.3'], check=True)
         if not api('/engines/voxcpm2/health').get('ok'):
             raise RuntimeError('VoxCPM installed. Restart VoiceStudio and rerun to refresh engine availability.')
@@ -84,15 +131,18 @@ def install_model():
 
 
 def register_voice(audio, transcript, name):
-    # curl handles the multipart upload; copy to a fixed filename to avoid form-path parsing.
-    with tempfile.TemporaryDirectory() as temp:
-        source = Path(temp) / ('reference' + audio.suffix)
-        shutil.copy2(audio, source)
-        result = subprocess.check_output(['curl', '--fail-with-body', '-sS', API + '/profiles',
-            '--form-string', 'name=' + name, '--form-string', 'kind=clone',
-            '--form-string', 'language=Korean', '--form-string', 'ref_text=' + transcript.read_text(encoding='utf-8'),
-            '-F', 'ref_audio=@' + str(source)], text=True)
-    return json.loads(result)
+    # UTF-8 multipart avoids Windows console encoding and curl version differences.
+    boundary = 'shorts-' + uuid.uuid4().hex
+    parts = []
+    for key, value in {'name': name, 'kind': 'clone', 'language': 'Korean',
+                       'ref_text': transcript.read_text(encoding='utf-8-sig')}.items():
+        parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n').encode('utf-8'))
+    parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="ref_audio"; filename="reference{audio.suffix}"\r\nContent-Type: application/octet-stream\r\n\r\n').encode('utf-8'))
+    parts.extend([audio.read_bytes(), f'\r\n--{boundary}--\r\n'.encode()])
+    req = urllib.request.Request(API + '/profiles', data=b''.join(parts),
+        headers={'Content-Type': f'multipart/form-data; boundary={boundary}'})
+    with urllib.request.urlopen(req, timeout=120) as response:
+        return json.load(response)
 
 
 def bundled_voice():
@@ -125,7 +175,7 @@ def main():
     args = p.parse_args()
     if args.voice_audio and (not args.voice_audio.is_file() or not args.voice_text or not args.voice_text.is_file()):
         p.error('--voice-audio requires an existing audio file and --voice-text transcript file.')
-    if args.voice_audio and not args.voice_text.read_text(encoding='utf-8').strip():
+    if args.voice_audio and not args.voice_text.read_text(encoding='utf-8-sig').strip():
         p.error('The matching voice transcript must not be empty.')
     ensure_app()
     install_model()

@@ -55,13 +55,19 @@ def setup_runtime(runtime):
     if int(version.lstrip('v').split('.')[0]) < 22:
         raise RuntimeError('Node.js 22 or newer is required; see README.md.')
     runtime.mkdir(parents=True, exist_ok=True)
-    cli = runtime / 'node_modules/.bin/hyperframes'
+    cli = runtime / 'node_modules/hyperframes/bin/hyperframes.mjs'
     if not cli.exists():
-        subprocess.run(['npm', 'install', '--prefix', str(runtime), '--save-exact', f'hyperframes@{VERSION}'], check=True)
+        npm = [shutil.which('npm')]
+        if os.name == 'nt':
+            npm_cli = Path(npm[0]).parent / 'node_modules/npm/bin/npm-cli.js'
+            if not npm_cli.is_file():
+                raise RuntimeError('Cannot find npm-cli.js. Install the official Node.js distribution, then rerun.')
+            npm = ['node', str(npm_cli)]
+        subprocess.run(npm + ['install', '--prefix', str(runtime), '--save-exact', f'hyperframes@{VERSION}'], check=True)
     else:
         print(f'Reusing existing runtime: {runtime}')
-    subprocess.run([str(cli), '--version'], check=True)
-    subprocess.run([str(cli), 'browser', 'ensure'], check=True)
+    subprocess.run(['node', str(cli), '--version'], check=True)
+    subprocess.run(['node', str(cli), 'browser', 'ensure'], check=True)
     print(f'Engine ready: {cli}')
 
 

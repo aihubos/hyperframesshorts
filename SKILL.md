@@ -48,7 +48,7 @@ description: 한국어 유튜브 쇼츠를 주제 선정부터 AI 동영상·이
 이 스킬은 [aihubos/hyperframesshorts](https://github.com/aihubos/hyperframesshorts)의 사용자 제작 워크플로다. HeyGen의 공식 Hyperframes 엔진과 구분되며, 설치 폴더와 호출 이름도 `hyperframesshorts`다.
 
 - 다른 사용자 제작 스킬은 필수 의존성이 아니다. 이 패키지의 `references/production.md`에 기본 편집 규칙이 포함된다. 다른 스킬이 설치되어 있다고 가정하거나 자동으로 추가 설치하지 않는다.
-- 엔진이 설치된 사용자는 저장소의 `python3 install.py --setup-voice`로 스킬과 음성 환경을 준비한다. 스킬만 필요하면 `python3 install.py`를 사용한다. 기본 대상은 Codex이며, 다른 에이전트는 `--skills-dir`로 설치 경로를 지정한다. 기존 동명 스킬은 백업한다. 설치된 스킬 폴더에서는 설치 프로그램이 없으므로 업데이트는 원래 Git 저장소에서 실행한다.
+- 엔진이 설치된 사용자는 저장소의 `python3 install.py --setup-voice`로 스킬과 음성 환경을 준비한다. 스킬만 필요하면 `python3 install.py`를 사용한다. Windows 10/11 x64에서도 `py -3 install.py --setup-voice`로 동일한 음성 설치 흐름을 사용한다. Windows 실기 설치·렌더링 검증은 별도로 필요하다. 기본 대상은 Codex이며, 다른 에이전트는 `--skills-dir`로 설치 경로를 지정한다. 기존 동명 스킬은 백업한다. 설치된 스킬 폴더에서는 설치 프로그램이 없으므로 업데이트는 원래 Git 저장소에서 실행한다.
 - 기존 프로젝트의 Hyperframes CLI를 재사용한다. `hyperframes --version` 또는 프로젝트의 `node_modules/.bin/hyperframes --version`으로 확인한다. 엔진이 없는 사용자만 저장소 README의 `--setup-runtime` 절차를 선택한다. 기존 엔진을 자동 업데이트하지 않는다.
 - 설치한 `SKILL.md`를 직접 읽으면 현재 요청에 적용할 수 있다. 다음 세션의 자동 검색은 앱을 재시작한 뒤 확인한다. 파일 설치와 스킬 목록 노출은 구분한다.
 - 동영상·이미지 생성 도구, 브라우저/컴퓨터 사용 도구, VoiceStudio 로컬 실행 환경은 별도로 필요하다. VoiceStudio 설치·모델 다운로드·개인 목소리 등록은 [음성 설정 안내](references/voice.md)를 따른다. GPT 이미지 생성 도구가 제공되면 설명 이미지와 썸네일에 우선 사용한다. 도구가 없다면 사용 가능한 생성 서비스 또는 사용자 제공 원본으로 진행하며, 없는 기능을 있다고 보고하지 않는다.

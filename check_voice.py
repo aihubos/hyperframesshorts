@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import json
+import os
 import subprocess
 import tempfile
 from unittest.mock import patch
@@ -38,7 +39,8 @@ with tempfile.TemporaryDirectory() as scratch:
     with patch.object(setup, 'CONFIG', config):
         setup.save_config('user-selected-voice')
     assert json.loads(config.read_text())['speed'] == 1.2
-    assert config.stat().st_mode & 0o077 == 0
+    if os.name != 'nt':
+        assert config.stat().st_mode & 0o077 == 0
     original, output = root / 'original.wav', root / 'fast.wav'
     subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=6', str(original)], check=True)
     speed.speed_voice(original, output)
@@ -51,7 +53,7 @@ with tempfile.TemporaryDirectory() as scratch:
         raise AssertionError('Double speed application was not blocked')
 print('PASS: model reuse/download routing, private config, real 1.2x duration and double-application guard.')
 
-transcript = (setup.BUNDLED / 'transcript.txt').read_text().strip()
+transcript = (setup.BUNDLED / 'transcript.txt').read_text(encoding='utf-8').strip()
 with patch.object(setup, 'api', return_value=[]), patch.object(setup, 'register_voice', return_value={'id': 'new'}) as register:
     assert setup.bundled_voice() == 'new'
     assert register.call_count == 1
