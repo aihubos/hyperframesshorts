@@ -13,7 +13,10 @@ https://github.com/aihubos/hyperframesshorts 저장소를 확인하고 README.md
 Hyperframes는 이미 설치되어 있으니 기존 엔진을 재사용하고 엔진을 재설치하거나 업데이트하지 마.
 기존 hyperframes 스킬은 보존하고 hyperframesshorts만 추가해줘.
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
-영상 생성·이미지 생성·ElevenLabs에 필요한 도구와 내 계정 연결 상태도 확인해줘.
+python3 install.py --setup-voice로 VoiceStudio와 VoxCPM2도 준비해줘.
+목소리는 나에게 물어 선택하고, 내가 제공한 참조 음성이 있으면 로컬에 자동 등록해줘.
+나레이션은 생성 원본 대비 1.2배속을 한 번 적용하고 그 음성에 자막을 맞춰줘.
+영상·이미지 생성 도구와 내 계정 연결 상태도 확인해줘.
 ```
 
 ## 직접 설치 — Hyperframes가 이미 있는 경우
@@ -23,10 +26,12 @@ Git과 Python 3가 필요합니다. 공개 저장소를 받는 데 GitHub 계정
 ```bash
 git clone https://github.com/aihubos/hyperframesshorts.git
 cd hyperframesshorts
-python3 install.py
+python3 install.py --setup-voice
 ```
 
-기본 설치는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
+`--setup-voice`는 VoiceStudio 앱(Apple Silicon macOS)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 목소리는 선택하거나 별도 파일로 등록합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
+
+옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
 Claude Code 또는 공유 스킬 폴더를 사용한다면 필요한 대상 하나를 지정하세요.
 
@@ -53,7 +58,7 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 | FFmpeg 및 ffprobe | 음성 믹싱·길이 확인·영상 검증 |
 | Omni Flash 360p 제공 서비스와 사용자 계정 | 실제 동영상 생성 |
 | 이미지 생성 도구 또는 서비스 | 이미지·썸네일 생성, GPT 이미지 생성 우선 |
-| ElevenLabs 계정 또는 사용자가 제공한 음성 파일 | Viraj 또는 지정 목소리 |
+| VoiceStudio + VoxCPM2 및 선택한 목소리 | 로컬 한국어 내레이션, 원본 대비 1.2배속 |
 | 필요 시 브라우저/컴퓨터 사용 도구 | 로그인된 생성 서비스 조작·다운로드 |
 | 사용자 음악 파일·사용 가능한 한국어 폰트 | 배경음악과 자막 |
 
@@ -67,11 +72,11 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 $hyperframesshorts로 잠자리의 후진 비행을 주제로 45초 쇼츠를 만들어줘.
 초반 후킹을 강하게 하고 다양한 거리와 각도로 구성해줘.
 동작은 Omni Flash 360p 영상, 원리는 움직이는 2D 설명 도식으로 보여줘.
-내 ElevenLabs 목소리와 첨부한 배경음악을 사용해줘.
+내가 선택한 VoiceStudio 목소리와 첨부한 배경음악을 사용해줘.
 최종 MP4·썸네일과 유튜브 제목·설명을 함께 전달해줘.
 ```
 
-기본값은 45초 세로 쇼츠, Omni Flash 360p 생성 원본, 최종 1080×1920/30fps, Viraj 음성, Wanted Sans 굵은 자막입니다. 사용자의 지정값이 우선합니다. 서비스에서 실제 모델/해상도를 확인하며 다른 모델로 임의 대체하지 않습니다.
+기본값은 45초 세로 쇼츠, Omni Flash 360p 생성 원본, 최종 1080×1920/30fps, VoiceStudio/VoxCPM2의 사용자 선택 음성 1.2배속, Wanted Sans 굵은 자막입니다. 사용자의 지정값이 우선합니다. 서비스에서 실제 모델/해상도를 확인하며 다른 모델로 임의 대체하지 않습니다.
 
 - 비슷한 구도의 반복을 피하고 넓은 장면·근접·정면·사선·위/아래 각도를 섞습니다.
 - 원리 구간에는 2D/3D 도해·표·그래프·설명 애니메이션 중 적합한 자료를 실제로 넣습니다.
@@ -106,3 +111,5 @@ python3 install.py --setup-runtime
 MIT 라이선스로 배포하는 워크플로 문서와 설치 프로그램만 포함합니다. 공식 엔진·생성 모델·이미지·영상·음성·음악·폰트는 포함하지 않으며 해당 서비스와 자산의 조건을 따릅니다. API 키·쿠키·개인 파일도 포함하지 않습니다.
 
 `python3 check_installer.py`로 임시 폴더에서 설치와 기존 폴더/심볼릭 링크 보존을 확인할 수 있습니다. 패키지와 설치 확인은 수신자 계정에서 실제 영상 생성·렌더링까지 성공했다는 의미는 아닙니다.
+
+음성 자동 설정 확인: `python3 check_voice.py`. 앱 최초 설치와 다른 OS는 별도 환경에서 검증이 필요합니다. 개인 목소리 파일은 GitHub에 포함되지 않으므로 동일 목소리를 공유하려면 참조 음성과 정확한 녹취를 별도로 전달하세요.

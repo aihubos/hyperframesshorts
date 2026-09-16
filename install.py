@@ -21,10 +21,10 @@ def install_skill(target):
     stage = Path(tempfile.mkdtemp(prefix=f'.{SKILL_NAME}-', dir=target.parent))
     backup = None
     try:
-        for name in ('SKILL.md', 'agents', 'references', 'LICENSE'):
+        for name in ('SKILL.md', 'agents', 'references', 'scripts', 'LICENSE'):
             src = SOURCE / name
             if src.is_dir():
-                shutil.copytree(src, stage / name)
+                shutil.copytree(src, stage / name, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
             else:
                 shutil.copy2(src, stage / name)
         if target.exists() or target.is_symlink():
@@ -72,12 +72,15 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--setup-runtime', action='store_true', help='Optionally prepare a separate engine when no existing engine is available.')
     mode.add_argument('--skip-runtime', action='store_true', help='Explicit skill-only installation; this is already the default.')
+    parser.add_argument('--setup-voice', action='store_true', help='Prepare VoiceStudio and VoxCPM2 after installing the skill.')
     args = parser.parse_args()
     if args.setup_runtime:
         setup_runtime(args.runtime_dir.expanduser().absolute())
     roots = [args.skills_dir] if args.skills_dir else [Path(os.environ.get('CODEX_HOME') or str(Path.home() / '.codex')) / 'skills']
     for root in dict.fromkeys(root.expanduser().absolute() for root in roots):
         install_skill(root / SKILL_NAME)
+    if args.setup_voice:
+        subprocess.run([sys.executable, str(SOURCE / 'scripts/setup_voice.py')], check=True)
     print('Read the installed SKILL.md to apply it now. Restart your agent app for fresh automatic discovery.')
 
 

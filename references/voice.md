@@ -1,0 +1,43 @@
+# VoiceStudio + VoxCPM2 + 1.2배속
+
+## 설치 및 재개
+
+저장소에서 `python3 install.py --setup-voice`를 실행한다. 기존 Hyperframes는 그대로 두고 스킬, VoiceStudio, VoxCPM2 순서로 준비한다. 이미 설치되어 실행 중인 VoiceStudio와 다운로드된 모델은 재사용한다.
+
+- Apple Silicon macOS: 앱이 없으면 VoiceStudio 공식 v0.5.2 설치 프로그램으로 설치하고 실행한다. macOS의 최초 앱 실행 승인과 앱 초기 설정은 사용자가 완료해야 할 수 있다. 보안 설정을 해제하지 않는다. 초기 설정 후 같은 명령으로 재개한다.
+- Windows/Linux/Intel Mac: 앱 설치는 [공식 다운로드](https://voicestudio.sh/download)의 지원 범위를 따른다. 이 패키지의 데스크톱 자동 설치는 Apple Silicon macOS만 지원한다. 로컬 API가 실행되면 모델/목소리 설정 코드는 재사용할 수 있지만 다른 OS 실행은 검증하지 않았다.
+- API 기준: `http://127.0.0.1:3900`. 포트가 다르거나 인증을 요구하는 설치는 실제 설정을 먼저 확인한다. 원격 서버로 개인 음성을 임의 전송하지 않는다.
+- VoxCPM2 패키지가 없으면 macOS의 기존 VoiceStudio 관리 환경에서 `uv pip install --python <VoiceStudio Python 경로> 'voxcpm>=2.0.3'`를 실행한다. 탐지하지 못한 환경에서는 에이전트가 실제 Python 환경을 찾아 공식 [엔진 안내](https://github.com/debpalash/VoiceStudio/blob/main/docs/engines/voxcpm2.md)를 따른다. 시스템 Python에 무작정 설치하지 않는다.
+- 모델은 `openbmb/VoxCPM2` 약 5GB를 공식 모델 API로 다운로드하고 TTS 엔진을 `voxcpm2`로 선택한다. 실패 시 다른 모델로 대체하지 않는다.
+
+VoiceStudio 앱은 AGPL-3.0, [VoxCPM2 모델](https://huggingface.co/openbmb/VoxCPM2)은 Apache-2.0이다. 서로 다른 라이선스이며 이 저장소에 앱이나 모델 가중치를 재배포하지 않는다.
+
+## 목소리 선택과 자동 등록
+
+목소리는 사용자에게 물어 선택한다. 이미 명시적으로 승인한 목소리는 다시 묻지 않고 재사용한다. 첫 설치에서 가장 최근 목소리나 첫 번째 항목을 임의 선택하지 않는다.
+
+```bash
+# 목록을 표시한 후 사용자가 선택한 ID를 지정
+python3 scripts/setup_voice.py
+python3 scripts/setup_voice.py --profile-id 선택한_ID
+
+# 별도로 전달받은, 사용 권한이 있는 음성을 자동 등록
+python3 scripts/setup_voice.py --voice-audio /절대경로/목소리.wav --voice-text /절대경로/정확한_녹취.txt --voice-name '내 쇼츠 목소리'
+```
+
+설치된 스킬에서는 해당 스킬 폴더의 `scripts/`를 사용한다. ID·모델·속도는 `~/.config/hyperframesshorts/voice.json`에 로컬 저장한다. 개인 음성과 ID는 공개 저장소에 넣지 않는다. GitHub 설치만으로 원래 제작자의 개인 목소리가 전달되지는 않는다. 동일한 목소리를 쓰려면 제작자가 별도로 제공한 참조 음성과 그 음성에 정확히 일치하는 녹취가 필요하다. 등록을 반복하면 새 프로필이 생기므로 이미 등록된 경우 ID로 재사용한다.
+
+참조 음성은 잡음 없는 5–15초를 권장한다. 긴 녹음에 일부 녹취만 넣으면 생성 음성이 짧게 끊길 수 있다. 참조를 자르면 녹취도 같은 구간으로 맞춘다. 기존 사용자 프로필을 임의 수정하지 말고 프로젝트용 짧은 참조를 별도로 만든다.
+
+## 생성과 속도 적용
+
+VoiceStudio `/openapi.json`에서 현재 API 형식을 먼저 확인한다. `/generate`는 multipart 요청이며 응답은 JSON이 아닌 WAV 바이너리다. 기본은 `engine=voxcpm2`, `language=Korean`, `speed=1.0`으로 원본을 생성한다. 선택한 `profile_id`를 사용하거나 같은 목소리의 정확한 짧은 `ref_audio`/`ref_text`를 사용한다. 두 방식을 동시에 전달하면 프로필이 참조를 덮어쓸 수 있으므로 함께 보내지 않는다. 짧은 샘플의 발음과 목소리를 확인한 뒤 전체 대본을 생성한다.
+
+```bash
+python3 scripts/speed_voice.py /절대경로/나레이션_원본.wav /절대경로/나레이션_1.2x.wav
+```
+
+- **생성 원본 대비 1.2배속을 정확히 한 번** 적용한다. 원본을 먼저 0.75배로 늦추거나 이전 1.2배 파일에 다시 적용하지 않는다.
+- 보조 프로그램은 원본과 기존 출력물을 덮어쓰지 않고 길이·배속 기록을 출력 옆 JSON에 저장한다. 별도 도구로 이미 가속한 파일은 기록이 없을 수 있으므로 원본 출처도 확인한다.
+- 최종 가속 음성으로 발화 정렬을 수행한 뒤 자막과 장면 길이를 결정한다. 배경음악은 정상 속도로 반복하고 따로 믹싱한다.
+- 제작정보에 엔진/모델, 선택 목소리 이름, 원본 길이, 실제 1.2배 적용과 결과 길이를 기록한다. 생성 성공·목소리 선택·재생 확인을 구분한다.
