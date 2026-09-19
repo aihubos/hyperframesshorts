@@ -10,7 +10,6 @@ Codex 또는 Claude Code에 아래 문장을 전달하세요.
 
 ```text
 https://github.com/aihubos/hyperframesshorts 저장소를 확인하고 README.md대로 내 에이전트에 설치해줘.
-먼저 스킬 설치 폴더를 나에게 물어보고, 선택한 경로를 --skills-dir로 전달해줘.
 Hyperframes가 이미 있으면 재사용하고, 없을 때만 설치해줘. 기존 엔진을 업데이트하지 마.
 기존 hyperframes 스킬은 보존하고 hyperframesshorts만 추가해줘.
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
@@ -32,13 +31,9 @@ cd hyperframesshorts
 python3 install.py --setup
 ```
 
-설치 시작 전에 **스킬 설치 상위 폴더**를 묻습니다. Enter를 누르면 Codex 기본 폴더를 사용하며, 선택한 폴더 안에 `hyperframesshorts`를 만듭니다. 이 선택은 스킬 위치에만 적용됩니다. 엔진은 기존 것을 재사용하고, 새 엔진 위치는 `--runtime-dir`로 지정합니다. 사용자 지정 스킬 폴더는 에이전트의 검색 경로에 등록되어 있어야 합니다.
-
-AI 등 비대화형 실행에서는 먼저 사용자에게 폴더를 확인하고 `--skills-dir "선택한 폴더"`를 반드시 전달하세요. 경로가 없으면 설치 전에 중단합니다.
-
 `--setup`은 기존 Hyperframes 탐색·재사용(없으면 설치) → 스킬 설치 → VoiceStudio 앱(Apple Silicon macOS / Windows x64)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
 
-옵션 없는 `python3 install.py`는 설치 폴더를 물어본 뒤 **스킬만** 복사합니다. 기본 위치는 `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`입니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
+옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
 Claude Code 또는 공유 스킬 폴더를 사용한다면 필요한 대상 하나를 지정하세요.
 

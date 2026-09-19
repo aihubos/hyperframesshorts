@@ -93,26 +93,6 @@ def setup_runtime(runtime, reuse_existing=False):
     print(f'Engine ready: {cli}')
 
 
-def select_skills_dir(selected):
-    if selected is None:
-        default = Path(os.environ.get('CODEX_HOME') or str(Path.home() / '.codex')) / 'skills'
-        if not sys.stdin.isatty():
-            raise RuntimeError('먼저 사용자에게 스킬 설치 폴더를 확인한 뒤 --skills-dir "폴더 경로"로 실행하세요.')
-        print('스킬을 설치할 상위 폴더를 지정하세요. 그 안에 hyperframesshorts 폴더를 만듭니다.')
-        print('사용자 지정 폴더는 에이전트의 스킬 검색 경로에 등록되어 있어야 합니다.')
-        selected = Path(input(f'설치 폴더 [Enter: {default}]: ').strip() or default)
-    selected = selected.expanduser().absolute()
-    target = selected / SKILL_NAME
-    if selected.exists() and not selected.is_dir():
-        raise RuntimeError(f'폴더가 아닌 경로입니다: {selected}')
-    source = SOURCE.resolve()
-    destination = target.resolve()
-    if destination == source or source in destination.parents or destination in source.parents:
-        raise RuntimeError('원본 저장소와 겹치지 않는 설치 폴더를 선택하세요.')
-    print(f'스킬 설치 위치: {target}', flush=True)
-    return selected
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--skills-dir', type=Path, help='Install into this skill parent directory (default: Codex only).')
@@ -123,13 +103,12 @@ def main():
     mode.add_argument('--skip-runtime', action='store_true', help='Explicit skill-only installation; this is already the default.')
     parser.add_argument('--setup-voice', action='store_true', help='Prepare VoiceStudio and VoxCPM2 after installing the skill.')
     args = parser.parse_args()
-    skills_dir = select_skills_dir(args.skills_dir)
     if args.setup or args.setup_runtime:
         print('[1/3] Prepare Hyperframes (reuse existing engine when --setup is selected).', flush=True)
         setup_runtime(args.runtime_dir.expanduser().absolute(), reuse_existing=args.setup)
     if args.setup:
         print('[2/3] Install skill; preserve previous files.', flush=True)
-    roots = [skills_dir]
+    roots = [args.skills_dir] if args.skills_dir else [Path(os.environ.get('CODEX_HOME') or str(Path.home() / '.codex')) / 'skills']
     for root in dict.fromkeys(root.expanduser().absolute() for root in roots):
         install_skill(root / SKILL_NAME)
     if args.setup or args.setup_voice:
@@ -141,6 +120,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, EOFError, RuntimeError, subprocess.CalledProcessError) as exc:
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f'Installation stopped: {exc}', file=sys.stderr)
         sys.exit(1)

@@ -59,25 +59,3 @@ with tempfile.TemporaryDirectory() as scratch:
         skill.assert_called_once()
         assert voice.call_args.args[0][-1].endswith('scripts/setup_voice.py')
 print('PASS: unified setup reuses the engine and invokes the shared skill/voice pipeline.')
-
-# Folder selection happens before installation, including unattended runs.
-with tempfile.TemporaryDirectory() as scratch:
-    root = Path(scratch)
-    with patch.object(installer.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value=str(root / 'chosen')):
-        assert installer.select_skills_dir(None) == root / 'chosen'
-    with patch.object(installer.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value=''), patch.dict(installer.os.environ, {'CODEX_HOME': str(root)}):
-        assert installer.select_skills_dir(None) == root / 'skills'
-    with patch.object(installer.sys.stdin, 'isatty', return_value=False):
-        try:
-            installer.select_skills_dir(None)
-        except RuntimeError:
-            pass
-        else:
-            raise AssertionError('Unattended installation must require a selected folder')
-    try:
-        installer.select_skills_dir(installer.SOURCE.parent)
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError('Source folder must not be replaced')
-print('PASS: folder selection, default, unattended requirement and source preservation.')
