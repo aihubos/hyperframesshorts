@@ -1,6 +1,6 @@
 interface:
   display_name: "hyperframesshorts"
-  short_description: "Omni Flash 360p와 기존 목소리로 쇼츠·썸네일 제작"
+  short_description: "Flow 720p→1080p와 기존 목소리로 쇼츠·썸네일 제작"
   default_prompt: "$hyperframesshorts로 이 주제를 동영상과 이미지가 섞인 45초 쇼츠로 만들고 썸네일까지 영상 제목 폴더에 저장해줘."
 policy:
   allow_implicit_invocation: true
