@@ -14,7 +14,9 @@ Hyperframes가 이미 있으면 재사용하고, 없을 때만 설치해줘. 기
 기존 hyperframes 스킬은 보존하고 hyperframesshorts만 추가해줘.
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
 macOS는 python3 install.py --setup, Windows는 py -3 install.py --setup으로 동일한 설치 흐름을 실행해줘.
-처음에는 포함된 제작자 공유 목소리를 자동 등록해줘. 기존에 내가 선택한 목소리가 있으면 유지해줘.
+먼저 음성 방식 1. 로컬 무료 2. ElevenLabs 무료 API 3. ElevenLabs 구독 중 하나를 나에게 물어봐줘.
+선택한 값을 --voice-provider local 또는 elevenlabs-free 또는 elevenlabs-paid로 전달해줘.
+로컬 선택일 때만 VoiceStudio와 모델을 설치하고, ElevenLabs 선택은 API 연결로 진행해줘. API 키를 채팅으로 요청하지 마.
 나레이션은 생성 원본 대비 1.2배속을 한 번 적용하고 그 음성에 자막을 맞춰줘.
 Flow는 Aside 브라우저와 컴퓨터 유즈를 우선 사용하고 화면을 점유하지 않는 백그라운드 방식으로 작업해줘.
 Aside의 백그라운드 제어가 지원되지 않으면 그 제약을 알리고 다른 브라우저로 임의 전환하지 마.
@@ -31,7 +33,27 @@ cd hyperframesshorts
 python3 install.py --setup
 ```
 
-`--setup`은 기존 Hyperframes 탐색·재사용(없으면 설치) → 스킬 설치 → VoiceStudio 앱(Apple Silicon macOS / Windows x64)과 VoxCPM2 다운로드·선택까지 진행합니다. 최초 OS 실행 승인/앱 초기 설정 후 재실행이 필요할 수 있습니다. 첫 설치에서는 포함된 제작자 공유 목소리를 자동 등록하며 기존 선택은 유지합니다. [전체 음성 설정 안내](references/voice.md)를 확인하세요.
+`--setup`은 먼저 음성 생성 방식을 묻고, 기존 Hyperframes 재사용(없으면 설치) → 스킬 설치 → 선택한 음성 환경 준비로 진행합니다. 설치 폴더는 자동 지정합니다.
+
+| 선택 | 비용·이용 범위 | 설치 흐름 |
+| --- | --- | --- |
+| 1. 로컬 생성 | 무료, 수익화 가능(모델·목소리 권리 준수), 컴퓨터 자원 소모 | VoiceStudio → VoxCPM2 → 공유/기존 목소리 |
+| 2. ElevenLabs 무료 API | 무료 한도 내, 수익화 불가, 공개 시 출처 표시 | API 키 → 무료 요금제 확인 → 목소리 연결 |
+| 3. ElevenLabs 구독 | 유료, 구독 중 생성한 음성의 상업 이용 가능(약관 적용) | API 키 → 구독 요금제 확인 → 목소리 연결 |
+
+**2·3번은 VoiceStudio 설치·실행 및 VoxCPM2 다운로드를 모두 건너뜁니다.** API 연결 실패 시 로컬로 임의 전환하지 않습니다. API 요금제와 사용자가 선택한 무료/구독 방식이 다르면 중단합니다.
+
+AI가 대신 설치할 때는 먼저 위 세 가지를 사용자에게 물어본 뒤 실행하세요. 비대화형 실행에 선택값이 없으면 설치 전에 중단합니다.
+
+```bash
+python3 install.py --setup --voice-provider local
+python3 install.py --setup --voice-provider elevenlabs-free --elevenlabs-voice-id 선택한_ID
+python3 install.py --setup --voice-provider elevenlabs-paid --elevenlabs-voice-id 선택한_ID
+```
+
+ElevenLabs는 로컬 환경변수 `ELEVENLABS_API_KEY`를 먼저 설정합니다. 키를 채팅·명령 인수·저장소에 넣지 않습니다. 연결 시 계정/목소리 읽기 권한, 제작 시 Text to Speech 권한이 필요합니다. 설치에서는 과금되는 음성을 생성하지 않으므로 실제 생성 가능 여부는 별도 샘플로 확인합니다. [API 연결 및 음성 설정 안내](references/voice.md)를 따르세요.
+
+무료 생성물은 나중에 유료 구독해도 상업 이용 권한이 소급되지 않습니다. 무료 공개물에는 제목에 `elevenlabs.io` 또는 `11.ai`를 표시합니다. 유료의 Beta 서비스 등 예외는 [ElevenLabs 공식 이용 안내](https://help.elevenlabs.io/hc/en-us/articles/13313564601361-Can-I-publish-the-content-I-generate-on-the-platform)를 따릅니다.
 
 옵션 없는 `python3 install.py`는 **Codex 스킬만** `$CODEX_HOME/skills/hyperframesshorts` 또는 `~/.codex/skills/hyperframesshorts`에 복사합니다. 엔진 설치·업데이트, 로그인, 다른 스킬 설치를 수행하지 않습니다.
 
@@ -60,7 +82,7 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 | FFmpeg 및 ffprobe | 음성 믹싱·길이 확인·영상 검증 |
 | Omni Flash 360p 제공 서비스와 사용자 계정 | 실제 동영상 생성 |
 | 이미지 생성 도구 또는 서비스 | 이미지·썸네일 생성, GPT 이미지 생성 우선 |
-| VoiceStudio + VoxCPM2 및 선택한 목소리 | 로컬 한국어 내레이션, 원본 대비 1.2배속 |
+| 선택한 음성 환경: 로컬 또는 ElevenLabs API | 한국어 내레이션, 원본 대비 1.2배속 |
 | 필요 시 브라우저/컴퓨터 사용 도구 | 로그인된 생성 서비스 조작·다운로드 |
 | 포함된 기본 음악·사용 가능한 한국어 폰트 | 배경음악과 자막 |
 
@@ -74,11 +96,11 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 $hyperframesshorts로 잠자리의 후진 비행을 주제로 45초 쇼츠를 만들어줘.
 초반 후킹을 강하게 하고 다양한 거리와 각도로 구성해줘.
 동작은 Omni Flash 360p 영상, 원리는 움직이는 2D 설명 도식으로 보여줘.
-내가 선택한 VoiceStudio 목소리와 포함된 기본 배경음악을 사용해줘.
+내가 선택한 음성 서비스와 목소리와 포함된 기본 배경음악을 사용해줘.
 최종 MP4·썸네일과 유튜브 제목·설명을 함께 전달해줘.
 ```
 
-기본값은 45초 세로 쇼츠, Omni Flash 360p 생성 원본, 최종 1080×1920/30fps, VoiceStudio/VoxCPM2의 사용자 선택 음성 1.2배속, Wanted Sans 굵은 자막입니다. 사용자의 지정값이 우선합니다. 서비스에서 실제 모델/해상도를 확인하며 다른 모델로 임의 대체하지 않습니다.
+기본값은 45초 세로 쇼츠, Omni Flash 360p 생성 원본, 최종 1080×1920/30fps, 사용자가 선택한 음성 환경의 음성 1.2배속, Wanted Sans 굵은 자막입니다. 사용자의 지정값이 우선합니다. 서비스에서 실제 모델/해상도를 확인하며 다른 모델로 임의 대체하지 않습니다.
 
 - 비슷한 구도의 반복을 피하고 넓은 장면·근접·정면·사선·위/아래 각도를 섞습니다.
 - 원리 구간에는 2D/3D 도해·표·그래프·설명 애니메이션 중 적합한 자료를 실제로 넣습니다.
@@ -114,7 +136,7 @@ python3 install.py --setup-runtime
 
 `python3 check_installer.py`로 임시 폴더에서 설치와 기존 폴더/심볼릭 링크 보존을 확인할 수 있습니다. 패키지와 설치 확인은 수신자 계정에서 실제 영상 생성·렌더링까지 성공했다는 의미는 아닙니다.
 
-음성 자동 설정 확인: `python3 check_voice.py`. 앱 최초 설치와 다른 OS는 별도 환경에서 검증이 필요합니다. 제작자 공유 목소리는 [assets/voice](assets/voice/)에 포함되어 자동 등록됩니다. `python3 scripts/setup_voice.py --bundled-voice`로 명시적으로 선택할 수도 있습니다.
+음성 자동 설정 확인: `python3 check_voice.py`. 앱 최초 설치와 다른 OS는 별도 환경에서 검증이 필요합니다. 로컬 선택 시 제작자 공유 목소리는 [assets/voice](assets/voice/)에서 자동 등록됩니다. `python3 scripts/setup_voice.py --provider local --bundled-voice`로 명시적으로 선택할 수도 있습니다.
 
 ## Flow 브라우저 기본값
 
@@ -122,7 +144,7 @@ python3 install.py --setup-runtime
 
 ## Windows 10/11 x64 설치
 
-macOS와 동일한 흐름입니다: **기본 도구 확인 → Hyperframes 재사용/설치 → 스킬 → VoiceStudio → VoxCPM2 → 공유 목소리 → 나레이션 1.2배속**. Whisper는 이 설치 명령에서 별도 설치하지 않습니다.
+macOS와 동일한 흐름입니다: **음성 방식 선택 → 기본 도구 확인 → Hyperframes 재사용/설치 → 스킬 → 로컬 환경 또는 ElevenLabs API 연결 → 나레이션 1.2배속**. Whisper는 이 설치 명령에서 별도 설치하지 않습니다.
 
 Git, Python 3, FFmpeg/ffprobe가 없다면 PowerShell에서 필요한 항목만 설치하세요. 엔진도 준비할 경우 Node.js 22 이상이 필요합니다.
 
@@ -141,7 +163,7 @@ cd hyperframesshorts
 py -3 install.py --setup
 ```
 
-VoiceStudio가 없으면 공식 **0.5.2 Current User MSI**를 받아 사용자별로 설치하고 실행합니다. 기존 설치는 재사용합니다. 초기 앱 설정·OS 승인·네트워크 다운로드가 끝나지 않으면 안내에 따라 같은 명령을 다시 실행하세요. 자동 재부팅이나 보안 설정 변경은 하지 않습니다. Windows ARM/32비트는 자동 설치 대상이 아닙니다.
+**로컬 생성 선택 시에만** VoiceStudio가 없으면 공식 **0.5.2 Current User MSI**를 받아 사용자별로 설치하고 실행합니다. 기존 설치는 재사용합니다. 초기 앱 설정·OS 승인·네트워크 다운로드가 끝나지 않으면 안내에 따라 같은 명령을 다시 실행하세요. 자동 재부팅이나 보안 설정 변경은 하지 않습니다. Windows ARM/32비트는 자동 설치 대상이 아닙니다.
 
 - 스킬: `%USERPROFILE%\.codex\skills\hyperframesshorts` (`CODEX_HOME` 지정 시 해당 경로 사용)
 - 설정: `%USERPROFILE%\.config\hyperframesshorts\voice.json`
@@ -153,15 +175,15 @@ Flow 로그인, Aside 설치·제어 연결, 폰트는 별도 준비하며 기�
 
 ## 두 OS의 동일한 setup 순서
 
-Docker 없이 각 OS에 직접 설치합니다. 차이는 Python 실행 명령과 앱 설치 파일(.app / MSI)뿐입니다.
+먼저 음성 방식을 선택합니다. 로컬은 Docker 없이 앱을 직접 설치하며, ElevenLabs는 앱 없이 API를 연결합니다.
 
 | 단계 | macOS Apple Silicon / Windows x64 공통 동작 |
 | --- | --- |
 | 1 | Node.js 22+, FFmpeg, ffprobe 확인. 없으면 준비 방법을 알리고 중단 |
 | 2 | 지정 runtime 경로·현재 폴더의 상위 프로젝트·PATH에서 Hyperframes 탐색, 기존 엔진 재사용 또는 없을 때 0.8.35 설치 |
 | 3 | 렌더링 브라우저 준비, 기존 스킬 백업 후 설치 |
-| 4 | 기존 VoiceStudio 재사용 또는 공식 앱 설치·실행 |
-| 5 | VoxCPM2 준비, 기존 목소리 유지 또는 포함된 공유 목소리 등록 |
+| 4 | 로컬: VoiceStudio 재사용/설치 · ElevenLabs: API 키와 요금제 확인 |
+| 5 | 로컬: VoxCPM2 및 목소리 준비 · ElevenLabs: 선택한 목소리 ID 연결 |
 | 6 | 내레이션 원본 대비 1.2배속 설정 저장 |
 
 ```bash

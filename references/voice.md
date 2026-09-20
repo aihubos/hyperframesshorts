@@ -1,8 +1,30 @@
-# VoiceStudio + VoxCPM2 + 1.2배속
+# 음성 방식 선택과 연결 + 1.2배속
+
+## 먼저 음성 방식을 선택
+
+`install.py --setup` 또는 `--setup-voice`는 1. 로컬 무료(목소리 권리 준수 시 수익화 가능, 컴퓨터 자원 소모), 2. ElevenLabs 무료 API(무료 한도, 수익화 불가, 출처 표시), 3. ElevenLabs 구독(유료, 구독 중 생성물 상업 이용 가능)을 묻는다. 비대화형 에이전트는 사용자 답변을 먼저 받고 `--voice-provider local|elevenlabs-free|elevenlabs-paid`로 전달한다. 설치 폴더는 묻지 않는다.
+
+## ElevenLabs 선택 시 — VoiceStudio 설치 없음
+
+1. 사용자가 ElevenLabs 계정에서 API 키를 만들고 로컬 환경변수 `ELEVENLABS_API_KEY`로 설정한다. [공식 API 키 안내](https://elevenlabs.io/docs/overview/administration/workspaces/api-keys)를 제공한다. API 키를 채팅이나 명령 인수로 받지 않는다. OS 환경변수 설정 후 에이전트/터미널을 다시 열어야 할 수 있다.
+2. User와 Voices 읽기 권한으로 연결을 확인하고, 음성 제작에는 Text to Speech 권한도 부여한다. 무료/구독 선택과 실제 `/v1/user/subscription` 요금제가 다르면 기존 설정을 유지하고 중단한다.
+3. 사용자가 Voices 화면에서 고른 목소리 ID를 `--elevenlabs-voice-id` 또는 `ELEVENLABS_VOICE_ID`로 전달한다. 이전 ElevenLabs 목소리 선택은 재사용할 수 있다. 무료 계정은 API로 사용할 수 있는 목소리를 선택해야 한다.
+4. `/v1/voices/{voice_id}` 확인 후 `voice.json`에 엔진·요금제·목소리·모델·속도만 저장한다. API 키는 저장하지 않으며 실제 생성 시에도 환경변수가 필요하다. 읽기 연결 성공은 TTS 권한·잔여 한도·실제 음성 생성 성공을 보장하지 않는다.
+
+```bash
+python3 scripts/setup_voice.py --provider elevenlabs-free --elevenlabs-voice-id 선택한_ID
+python3 scripts/setup_voice.py --provider elevenlabs-paid --elevenlabs-voice-id 선택한_ID
+```
+
+생성 시 `voice.json`의 `engine`이 `elevenlabs`이면 ElevenLabs 공식 TTS API를 사용한다. `ELEVENLABS_API_KEY`를 `xi-api-key` 헤더에 넣고, 선택한 `voice_id` 및 `model`(`eleven_multilingual_v2`)로 원본을 생성한다. 생성 직전에 요금제를 다시 확인한다. 무료 선택에서 유료 과금으로 또는 유료 선택에서 무료로 바뀌면 사용자에게 알리고 선택을 갱신한다. 실패 시 로컬 음성으로 임의 전환하지 않는다. 원본 생성 후 아래 `speed_voice.py`로 1.2배속을 한 번만 적용하고 자막을 맞춘다.
+
+무료는 상업 이용 불가이며 공개 제목에 `elevenlabs.io` 또는 `11.ai`를 표시한다. 구독 중 생성한 음성은 약관상 상업 이용이 가능하며, 무료 생성물에 유료 권한이 소급되지 않는다. Beta 서비스 등 예외는 [공식 이용 안내](https://help.elevenlabs.io/hc/en-us/articles/13313564601361-Can-I-publish-the-content-I-generate-on-the-platform)를 확인한다. 어떤 방식도 YouTube 수익화 승인을 보장하지 않는다.
+
+아래 VoiceStudio 설치·등록·생성 절차는 **1번 로컬 선택에만** 적용한다.
 
 ## 설치 및 재개
 
-저장소에서 `python3 install.py --setup`를 실행한다. 기존 Hyperframes는 그대로 두고 Hyperframes 확인·재사용/설치, 스킬, VoiceStudio, VoxCPM2 순서로 준비한다. 두 OS 모두 Docker 없이 직접 설치한다. 이미 설치되어 실행 중인 VoiceStudio와 다운로드된 모델은 재사용한다.
+저장소에서 `python3 install.py --setup`를 실행한다. 1번 로컬 선택 시 기존 Hyperframes를 재사용하고, 스킬, VoiceStudio, VoxCPM2 순서로 준비한다. 두 OS 모두 Docker 없이 직접 설치한다. 이미 설치되어 실행 중인 VoiceStudio와 다운로드된 모델은 재사용한다.
 
 - Apple Silicon macOS: 앱이 없으면 VoiceStudio 공식 v0.5.2 설치 프로그램으로 설치하고 실행한다. macOS의 최초 앱 실행 승인과 앱 초기 설정은 사용자가 완료해야 할 수 있다. 보안 설정을 해제하지 않는다. 초기 설정 후 같은 명령으로 재개한다.
 - Windows 10/11 x64: `py -3 install.py --setup`로 공식 Current User MSI 설치·실행 후 같은 모델과 공유 목소리를 설정한다. 기존 설치를 재사용하며 최초 앱 설정 후 재실행이 필요할 수 있다.
@@ -19,14 +41,14 @@ VoiceStudio 앱은 AGPL-3.0, [VoxCPM2 모델](https://huggingface.co/openbmb/Vox
 
 ```bash
 # 목록을 표시한 후 사용자가 선택한 ID를 지정
-python3 scripts/setup_voice.py
-python3 scripts/setup_voice.py --profile-id 선택한_ID
+python3 scripts/setup_voice.py --provider local
+python3 scripts/setup_voice.py --provider local --profile-id 선택한_ID
 
 # 별도로 전달받은, 사용 권한이 있는 음성을 자동 등록
-python3 scripts/setup_voice.py --voice-audio /절대경로/목소리.wav --voice-text /절대경로/정확한_녹취.txt --voice-name '내 쇼츠 목소리'
+python3 scripts/setup_voice.py --provider local --voice-audio /절대경로/목소리.wav --voice-text /절대경로/정확한_녹취.txt --voice-name '내 쇼츠 목소리'
 ```
 
-설치된 스킬에서는 해당 스킬 폴더의 `scripts/`를 사용한다. ID·모델·속도는 `~/.config/hyperframesshorts/voice.json`에 로컬 저장한다. 제작자가 공개를 요청한 7.8초 참조 음성과 정확한 녹취는 `assets/voice/`에 포함한다. 계정 정보나 로컬 프로필 ID는 공유하지 않는다. 공유 음성은 이름·녹취가 같은 기존 프로필이 있으면 재사용한다. 기존 선택 대신 공유 목소리를 쓰려면 `python3 scripts/setup_voice.py --bundled-voice`를 실행한다. 사용자가 별도 음성을 반복 등록하면 새 프로필이 생기므로 이후에는 ID로 재사용한다.
+설치된 스킬에서는 해당 스킬 폴더의 `scripts/`를 사용한다. ID·모델·속도는 `~/.config/hyperframesshorts/voice.json`에 로컬 저장한다. 제작자가 공개를 요청한 7.8초 참조 음성과 정확한 녹취는 `assets/voice/`에 포함한다. 계정 정보나 로컬 프로필 ID는 공유하지 않는다. 공유 음성은 이름·녹취가 같은 기존 프로필이 있으면 재사용한다. 기존 선택 대신 공유 목소리를 쓰려면 `python3 scripts/setup_voice.py --provider local --bundled-voice`를 실행한다. 사용자가 별도 음성을 반복 등록하면 새 프로필이 생기므로 이후에는 ID로 재사용한다.
 
 참조 음성은 잡음 없는 5–15초를 권장한다. 긴 녹음에 일부 녹취만 넣으면 생성 음성이 짧게 끊길 수 있다. 참조를 자르면 녹취도 같은 구간으로 맞춘다. 기존 사용자 프로필을 임의 수정하지 말고 프로젝트용 짧은 참조를 별도로 만든다.
 

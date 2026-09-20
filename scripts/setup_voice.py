@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import sys
 import uuid
 import platform
 from pathlib import Path
@@ -19,6 +20,69 @@ MODEL = 'openbmb/VoxCPM2'
 BUNDLED = Path(__file__).resolve().parent.parent / 'assets/voice'
 BUNDLED_NAME = 'Hyperframes Shorts Shared Voice'
 CONFIG = Path.home() / '.config/hyperframesshorts/voice.json'
+
+
+PROVIDERS = ('local', 'elevenlabs-free', 'elevenlabs-paid')
+
+
+def select_provider(selected=None):
+    if selected:
+        if selected not in PROVIDERS:
+            raise ValueError('Unknown voice provider.')
+        return selected
+    if not sys.stdin.isatty():
+        raise RuntimeError('사용자에게 음성 방식 1/2/3을 물어본 후 --voice-provider local|elevenlabs-free|elevenlabs-paid로 실행하세요.')
+    print('음성 생성 방식을 선택하세요. 설치 폴더는 자동 지정됩니다.')
+    print('1. 로컬 생성: 무료 · 수익화 가능(모델·목소리 권리 준수) · 컴퓨터 자원 소모')
+    print('2. ElevenLabs 무료 API: 무료 한도 내 · 수익화 불가 · 공개 시 출처 표시')
+    print('3. ElevenLabs 구독: 유료 · 구독 중 생성한 음성의 상업 이용 가능(약관 적용)')
+    choice = input('선택 [1/2/3]: ').strip()
+    if choice not in ('1', '2', '3'):
+        raise ValueError('1, 2, 3 중 하나를 선택하고 다시 실행하세요.')
+    return PROVIDERS[int(choice) - 1]
+
+
+def eleven_api(path, key):
+    req = urllib.request.Request('https://api.elevenlabs.io' + path, headers={'xi-api-key': key})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f'ElevenLabs 연결 실패 (HTTP {exc.code}). API 키, User/Voices 읽기 권한과 계정 상태를 확인하세요.') from None
+    except urllib.error.URLError:
+        raise RuntimeError('ElevenLabs에 연결할 수 없습니다. 네트워크를 확인하고 다시 실행하세요.') from None
+
+
+def setup_elevenlabs(provider, voice_id=None):
+    key = os.environ.get('ELEVENLABS_API_KEY', '').strip()
+    if not key:
+        raise RuntimeError('ElevenLabs 계정에서 API 키를 만든 뒤 로컬 환경변수 ELEVENLABS_API_KEY에 설정하고 재실행하세요. 키를 채팅에 보내지 마세요. 안내: https://elevenlabs.io/docs/overview/administration/workspaces/api-keys')
+    subscription = eleven_api('/v1/user/subscription', key)
+    tier = subscription.get('tier')
+    if not isinstance(tier, str) or not tier:
+        raise RuntimeError('계정 요금제를 확인하지 못했습니다. 기존 음성 설정을 유지합니다.')
+    if (tier == 'free') != (provider == 'elevenlabs-free'):
+        raise RuntimeError('선택한 무료/구독 방식과 실제 계정 요금제가 다릅니다. 계정을 확인하고 알맞은 방식으로 다시 실행하세요.')
+    previous = json.loads(CONFIG.read_text(encoding='utf-8')) if CONFIG.exists() else {}
+    voice_id = voice_id or os.environ.get('ELEVENLABS_VOICE_ID')
+    if not voice_id and previous.get('engine') == 'elevenlabs':
+        voice_id = previous.get('voice_id')
+    if not voice_id:
+        if not sys.stdin.isatty():
+            raise RuntimeError('사용자가 고른 목소리 ID를 --elevenlabs-voice-id 또는 ELEVENLABS_VOICE_ID로 지정하세요. VoiceStudio는 설치하지 않습니다.')
+        print('ElevenLabs의 Voices에서 사용할 목소리의 ID를 복사하세요.')
+        voice_id = input('목소리 ID: ').strip()
+    if not voice_id or not voice_id.strip():
+        raise ValueError('목소리 ID가 필요합니다.')
+    voice_id = voice_id.strip()
+    voice = eleven_api('/v1/voices/' + urllib.parse.quote(voice_id, safe=''), key)
+    if voice.get('voice_id') != voice_id:
+        raise RuntimeError('선택한 목소리를 확인하지 못했습니다. 기존 음성 설정을 유지합니다.')
+    write_config({'engine': 'elevenlabs', 'provider': provider, 'tier': tier,
+                  'voice_id': voice_id, 'model': 'eleven_multilingual_v2',
+                  'api_key_env': 'ELEVENLABS_API_KEY', 'speed': 1.2, 'language': 'Korean'})
+    print('ElevenLabs 계정·목소리 연결 확인 완료. API 키는 파일에 저장하지 않습니다.')
+    print('음성 생성 시에도 ELEVENLABS_API_KEY가 필요합니다. 실제 생성 가능 여부는 짧은 샘플로 별도 확인하세요.')
 
 
 def api(path, data=None):
@@ -154,18 +218,24 @@ def bundled_voice():
     return register_voice(BUNDLED / 'reference.wav', BUNDLED / 'transcript.txt', BUNDLED_NAME)['id']
 
 
-def save_config(profile_id):
+def write_config(settings):
     CONFIG.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(mode='w', dir=CONFIG.parent, delete=False, encoding='utf-8') as out:
-        json.dump({'engine': 'voxcpm2', 'model': MODEL, 'profile_id': profile_id,
-                   'speed': 1.2, 'language': 'Korean'}, out, indent=2)
+        json.dump(settings, out, indent=2)
         name = out.name
     Path(name).replace(CONFIG)
     print(f'Voice selection saved locally: {CONFIG}; narration speed=1.2')
 
 
+def save_config(profile_id):
+    write_config({'engine': 'voxcpm2', 'provider': 'local', 'model': MODEL,
+                  'profile_id': profile_id, 'speed': 1.2, 'language': 'Korean'})
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--provider', choices=PROVIDERS)
+    p.add_argument('--elevenlabs-voice-id')
     group = p.add_mutually_exclusive_group()
     group.add_argument('--bundled-voice', action='store_true', help='Select the creator-shared voice bundled with this skill.')
     group.add_argument('--profile-id', help='Use only the voice explicitly selected by the user.')
@@ -177,6 +247,14 @@ def main():
         p.error('--voice-audio requires an existing audio file and --voice-text transcript file.')
     if args.voice_audio and not args.voice_text.read_text(encoding='utf-8-sig').strip():
         p.error('The matching voice transcript must not be empty.')
+    provider = select_provider(args.provider)
+    if provider != 'local':
+        if args.profile_id or args.bundled_voice or args.voice_audio or args.voice_text:
+            p.error('로컬 목소리 옵션은 --provider local에서만 사용할 수 있습니다.')
+        setup_elevenlabs(provider, args.elevenlabs_voice_id)
+        return
+    if args.elevenlabs_voice_id:
+        p.error('--elevenlabs-voice-id는 ElevenLabs 선택 시에만 사용할 수 있습니다.')
     ensure_app()
     install_model()
     profile_id = args.profile_id
@@ -201,5 +279,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, RuntimeError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+    except (OSError, EOFError, RuntimeError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
         raise SystemExit(f'Voice setup incomplete: {exc}')

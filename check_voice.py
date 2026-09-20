@@ -62,3 +62,45 @@ with patch.object(setup, 'api', return_value=[{'id': 'existing', 'name': setup.B
     register.assert_not_called()
 assert 7 < speed.duration(setup.BUNDLED / 'reference.wav') < 9
 print('PASS: bundled audio exists; new voice registers and existing matching voice is reused.')
+
+# Cloud setup never starts/downloads the local engine, and failed connections preserve settings.
+with tempfile.TemporaryDirectory() as scratch:
+    config = Path(scratch) / 'voice.json'
+    for provider, tier in [('elevenlabs-free', 'free'), ('elevenlabs-paid', 'creator')]:
+        with patch.object(setup, 'CONFIG', config), patch.dict(os.environ, {'ELEVENLABS_API_KEY': 'test-only-key'}, clear=True), patch.object(setup.sys, 'argv', ['setup_voice.py', '--provider', provider, '--elevenlabs-voice-id', 'chosen']), patch.object(setup, 'eleven_api', side_effect=[{'tier': tier}, {'voice_id': 'chosen'}]) as cloud, patch.object(setup, 'ensure_app') as app, patch.object(setup, 'install_model') as model:
+            setup.main()
+            app.assert_not_called()
+            model.assert_not_called()
+            settings = json.loads(config.read_text())
+            assert settings['engine'] == 'elevenlabs' and settings['provider'] == provider
+            assert settings['voice_id'] == 'chosen' and 'test-only-key' not in config.read_text()
+            assert [c.args[0] for c in cloud.call_args_list] == ['/v1/user/subscription', '/v1/voices/chosen']
+    before = config.read_bytes()
+    for env, response in [({}, {}), ({'ELEVENLABS_API_KEY': 'test-only-key'}, {'tier': 'free'})]:
+        with patch.object(setup, 'CONFIG', config), patch.dict(os.environ, env, clear=True), patch.object(setup, 'eleven_api', return_value=response):
+            try:
+                setup.setup_elevenlabs('elevenlabs-paid', 'chosen')
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError('Missing key or plan mismatch must fail')
+            assert config.read_bytes() == before
+    with patch.object(setup, 'CONFIG', config), patch.dict(os.environ, {'ELEVENLABS_API_KEY': 'test-only-key'}, clear=True), patch.object(setup, 'eleven_api', side_effect=RuntimeError('connection failed')):
+        try:
+            setup.setup_elevenlabs('elevenlabs-paid', 'chosen')
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError('Connection failure must stop setup')
+        assert config.read_bytes() == before
+for number, provider in enumerate(setup.PROVIDERS, 1):
+    with patch.object(setup.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value=str(number)):
+        assert setup.select_provider() == provider
+with patch.object(setup.sys.stdin, 'isatty', return_value=False):
+    try:
+        setup.select_provider()
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError('Unattended setup requires a user choice')
+print('PASS: all provider choices, cloud skips local setup, connection failure preserves settings, no API key saved.')

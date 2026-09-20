@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime
+from scripts.setup_voice import PROVIDERS, select_provider
 
 SOURCE = Path(__file__).resolve().parent
 VERSION = '0.8.35'
@@ -98,11 +99,18 @@ def main():
     parser.add_argument('--skills-dir', type=Path, help='Install into this skill parent directory (default: Codex only).')
     parser.add_argument('--runtime-dir', type=Path, default=Path.home() / '.local/share/hyperframes/runtime')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--setup', action='store_true', help='Unified macOS/Windows setup: engine, skill, VoiceStudio, VoxCPM2 and shared voice.')
+    mode.add_argument('--setup', action='store_true', help='Unified macOS/Windows setup: engine, skill and user-selected voice provider.')
     mode.add_argument('--setup-runtime', action='store_true', help='Optionally prepare a separate engine when no existing engine is available.')
     mode.add_argument('--skip-runtime', action='store_true', help='Explicit skill-only installation; this is already the default.')
-    parser.add_argument('--setup-voice', action='store_true', help='Prepare VoiceStudio and VoxCPM2 after installing the skill.')
+    parser.add_argument('--setup-voice', action='store_true', help='Prepare the selected voice provider after installing the skill.')
+    parser.add_argument('--voice-provider', choices=PROVIDERS, help='User-selected narration: local, elevenlabs-free or elevenlabs-paid.')
+    parser.add_argument('--elevenlabs-voice-id', help='Voice ID chosen by the user for ElevenLabs.')
     args = parser.parse_args()
+    if (args.voice_provider or args.elevenlabs_voice_id) and not (args.setup or args.setup_voice):
+        parser.error('음성 옵션은 --setup 또는 --setup-voice와 함께 사용하세요.')
+    provider = select_provider(args.voice_provider) if args.setup or args.setup_voice else None
+    if provider == 'local' and args.elevenlabs_voice_id:
+        parser.error('로컬 생성에는 ElevenLabs 목소리 ID를 지정하지 마세요.')
     if args.setup or args.setup_runtime:
         print('[1/3] Prepare Hyperframes (reuse existing engine when --setup is selected).', flush=True)
         setup_runtime(args.runtime_dir.expanduser().absolute(), reuse_existing=args.setup)
@@ -112,14 +120,17 @@ def main():
     for root in dict.fromkeys(root.expanduser().absolute() for root in roots):
         install_skill(root / SKILL_NAME)
     if args.setup or args.setup_voice:
-        print('[3/3] Prepare VoiceStudio, VoxCPM2 and voice; narration speed 1.2x.', flush=True)
-        subprocess.run([sys.executable, str(SOURCE / 'scripts/setup_voice.py')], check=True)
+        print('[3/3] Prepare selected voice provider: ' + provider, flush=True)
+        command = [sys.executable, str(SOURCE / 'scripts/setup_voice.py'), '--provider', provider]
+        if args.elevenlabs_voice_id:
+            command += ['--elevenlabs-voice-id', args.elevenlabs_voice_id]
+        subprocess.run(command, check=True)
     print('Read the installed SKILL.md to apply it now. Restart your agent app for fresh automatic discovery.')
 
 
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+    except (OSError, EOFError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f'Installation stopped: {exc}', file=sys.stderr)
         sys.exit(1)
