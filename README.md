@@ -15,6 +15,8 @@ Hyperframes가 이미 있으면 재사용하고, 없을 때만 설치해줘. 기
 설치된 SKILL.md를 직접 읽어 현재 요청부터 적용해줘.
 macOS는 python3 install.py --setup, Windows는 py -3 install.py --setup으로 동일한 설치 흐름을 실행해줘.
 먼저 음성 방식 1. 로컬 무료 2. ElevenLabs 무료 API 3. ElevenLabs 구독 중 하나를 나에게 물어봐줘.
+효과음은 별도로 1. 설치 안 함(기본) 2. Agent Audio 로컬 설치 중 하나를 물어봐줘.
+현재 RAM·디스크와 아래 자원 기준을 안내하고 선택값을 --audio-provider none 또는 agent-audio로 전달해줘.
 선택한 값을 --voice-provider local 또는 elevenlabs-free 또는 elevenlabs-paid로 전달해줘.
 로컬 선택일 때만 VoiceStudio와 모델을 설치하고, ElevenLabs 선택은 API 연결로 진행해줘. API 키를 채팅으로 요청하지 마.
 나레이션은 생성 원본 대비 1.2배속을 한 번 적용하고 그 음성에 자막을 맞춰줘.
@@ -33,7 +35,7 @@ cd hyperframesshorts
 python3 install.py --setup
 ```
 
-`--setup`은 먼저 음성 생성 방식을 묻고, 기존 Hyperframes 재사용(없으면 설치) → 스킬 설치 → 선택한 음성 환경 준비로 진행합니다. 설치 폴더는 자동 지정합니다.
+`--setup`은 음성 방식과 효과음 설치 여부를 각각 묻고, 기존 Hyperframes 재사용(없으면 설치) → 스킬 설치 → 선택한 음성 환경 → 선택한 경우 Agent Audio 설치로 진행합니다. 설치 폴더는 자동 지정합니다.
 
 | 선택 | 비용·이용 범위 | 설치 흐름 |
 | --- | --- | --- |
@@ -89,7 +91,37 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 
 스킬 설치만으로 서비스 로그인·유료 구독·생성 도구가 생기지는 않습니다. 수신자는 자신의 서비스 계정으로 로그인합니다. 공유 목소리와 기본 배경음악이 포함되어 있으며, 별도 지정이 없으면 같은 음악을 사용합니다.
 
-Agent Audio는 필수 의존성이 아닙니다. 필요한 소리가 있을 때만 별도 [설치 안내](https://github.com/AIEGOBOT/agent-audio/blob/main/INSTALL_AGENT.md)에 따라 로컬 런타임과 `audio-production` 스킬·MCP를 준비합니다. 모델 다운로드와 이용 약관 동의가 별도로 필요할 수 있으며, `hyperframesshorts` 설치 프로그램은 이를 자동으로 설치하지 않습니다. 준비된 환경에서는 `audio_status` 확인 후 `generate_audio`로 만든 WAV를 영상별 `assets/audio/`에 저장하고 편집에 넣습니다. 내레이션 방식은 유지하고 기본 BGM은 별도 요청이 없으면 유지합니다.
+Agent Audio는 필수 의존성이 아닙니다. 필요한 소리가 있을 때만 별도 [설치 안내](https://github.com/AIEGOBOT/agent-audio/blob/main/INSTALL_AGENT.md)에 따라 로컬 런타임과 `audio-production` 스킬·MCP를 준비합니다. 모델 다운로드와 이용 약관 동의가 별도로 필요할 수 있으며, `hyperframesshorts` 설치 프로그램은 사용자가 효과음 설치를 선택하고 자원 기준을 통과한 경우에만 공식 설치 프로그램을 실행합니다. 준비된 환경에서는 `audio_status` 확인 후 `generate_audio`로 만든 WAV를 영상별 `assets/audio/`에 저장하고 편집에 넣습니다. 내레이션 방식은 유지하고 기본 BGM은 별도 요청이 없으면 유지합니다.
+
+### 효과음 설치 선택 — 기본은 설치 안 함
+
+음성과 효과음은 별도 선택입니다. ElevenLabs 음성을 쓰면서 로컬 효과음만 설치할 수도 있습니다.
+
+| 선택 | 동작 |
+| --- | --- |
+| 1. 설치 안 함 (기본) | 추가 모델·MCP 다운로드 없이 기존 소리와 기본 BGM 사용 |
+| 2. Agent Audio 로컬 설치 | RAM·디스크 확인 후 공식 런타임·모델·audio-production 스킬·MCP 설치 |
+
+| 이 설치기의 보수적 설치 기준 | 총 RAM | 설치 경로의 디스크 여유 |
+| --- | --- | --- |
+| Apple Silicon macOS | 24GiB 이상 | 25GiB 이상 |
+| Windows 10/11 x64 | 32GiB 이상 | 25GiB 이상 |
+
+이 수치는 검증된 최소 사양이 아닙니다. macOS의 24GiB 장비 생성 보고와 Windows의 권장 계획치를 바탕으로 정한 설치 기준입니다. 모델 약 6.9–7.4GB 외에 실행 환경과 캐시가 필요하고, 로컬 연산·전력·실행 시간이 듭니다. 총 RAM이 충분해도 다른 앱이 사용 중이면 실행 시 가용 메모리를 다시 확인해야 합니다. 기준 미달·자원 확인 불가·다른 OS에서는 다운로드 전에 중단하며, `none`으로 기본 설치를 계속할 수 있습니다. 필요한 모델 약관 동의와 인증은 사용자가 직접 진행합니다.
+
+```bash
+# 전체 설치: 음성과 효과음을 각각 선택
+python3 install.py --setup
+
+# AI/비대화형 설치 예시: 사용자 답변을 명시
+python3 install.py --setup --voice-provider local --audio-provider none
+python3 install.py --setup --voice-provider local --audio-provider agent-audio
+
+# 나중에 효과음만 추가 (기존 스킬·음성 설정 유지)
+python3 install.py --setup-audio --audio-provider agent-audio
+```
+
+Windows는 `python3` 대신 `py -3`를 사용합니다. 비대화형 실행에서 효과음 선택을 생략하면 `none`이며, 옵션 없는 스킬 복사에는 선택창이 나오지 않습니다. Git·uv가 필요합니다. Agent Audio 소스 기본 위치는 `~/.local/share/agent-audio/source`, 런타임·모델은 `~/.agent-audio`입니다. 기존 소스는 `--agent-audio-dir`로 지정하고 데이터 위치는 공식 `AGENT_AUDIO_HOME` 환경변수를 사용합니다. 수정된 소스·다른 버전·설정 충돌은 보존하고 알립니다. 공식 설치기는 탐지한 Codex·Claude Code·Cursor에 각각 스킬과 MCP를 등록합니다. 설치 후 실제 WAV 생성과 새 대화의 도구 인식은 별도로 확인합니다. Windows의 자원 탐지·첫 설치는 실기 확인이 필요합니다.
 
 새 배경음악을 요청했고 MiniMax Music 3가 MLX Serve에 설치되어 있으면 기존 로컬 음악 API를 활용할 수 있습니다. 모델 목록 확인 → WAV 생성 → 영상에 맞춘 믹싱 순서이며, 자세한 요청 형식은 [MiniMax Music 3 연결](references/production.md#minimax-music-3-연결-새-음악-요청-시)을 참고하세요.
 
@@ -200,6 +232,7 @@ Flow 로그인, Aside 설치·제어 연결, 폰트는 별도 준비하며 기�
 | 4 | 로컬: VoiceStudio 재사용/설치 · ElevenLabs: API 키와 요금제 확인 |
 | 5 | 로컬: VoxCPM2 및 목소리 준비 · ElevenLabs: 선택한 목소리 ID 연결 |
 | 6 | 내레이션 원본 대비 1.2배속 설정 저장 |
+| 7 | 효과음 설치를 선택한 경우에만 자원 재확인 → Agent Audio 공식 설치·등록 |
 
 ```bash
 # macOS (Homebrew가 있는 경우, 없는 기본 도구만 준비)

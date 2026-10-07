@@ -60,3 +60,41 @@ with tempfile.TemporaryDirectory() as scratch:
         assert voice.call_args.args[0][-3].endswith('scripts/setup_voice.py')
         assert voice.call_args.args[0][-2:] == ['--provider', 'local']
 print('PASS: unified setup reuses the engine and invokes the shared skill/voice pipeline.')
+
+# Optional audio must never download on skip, insufficient resources, or a later resource drop.
+audio = installer.select_audio.__module__
+import importlib
+sound = importlib.import_module(audio)
+ready = {'supported': True, 'ram': 32, 'ram_required': 24, 'disk': 30, 'disk_required': 25}
+with patch.object(sound.sys.stdin, 'isatty', return_value=False), patch.object(sound, 'resources') as scan:
+    assert sound.select_audio() == 'none'
+    assert sound.select_audio('none') == 'none'
+    scan.assert_not_called()
+with patch.object(sound, 'resources', return_value=ready), patch.object(sound.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value='2'):
+    assert sound.select_audio() == 'agent-audio'
+for low in ({**ready, 'disk': 24}, {**ready, 'ram': 16}, {**ready, 'ram': None}, {**ready, 'supported': False}):
+    with patch.object(sound, 'resources', return_value=low), patch.object(sound.subprocess, 'run') as run:
+        try:
+            sound.select_audio('agent-audio')
+            raise AssertionError('resource gate was bypassed')
+        except RuntimeError:
+            pass
+        try:
+            sound.setup_audio()
+            raise AssertionError('resource recheck was bypassed')
+        except RuntimeError:
+            pass
+        run.assert_not_called()
+with patch.object(sys, 'argv', ['install.py', '--setup-audio', '--audio-provider', 'agent-audio']), patch.object(installer, 'select_audio', return_value='agent-audio'), patch.object(installer, 'setup_audio') as setup, patch.object(installer, 'install_skill') as skill, patch.object(installer, 'setup_runtime') as engine:
+    installer.main()
+    setup.assert_called_once()
+    skill.assert_not_called()
+    engine.assert_not_called()
+with tempfile.TemporaryDirectory() as scratch:
+    source = Path(scratch) / 'source'
+    with patch.object(sound, 'resources', return_value=ready), patch.object(sound.shutil, 'which', return_value='/tool'), patch.object(sound.subprocess, 'run') as run:
+        sound.setup_audio(source)
+        commands = [call.args[0] for call in run.call_args_list]
+        assert commands[:3] == [['git', 'clone', sound.REPOSITORY, str(source)], ['git', '-C', str(source), 'checkout', '--detach', sound.REVISION], ['uv', 'sync', '--frozen']]
+        assert [cmd[-1] for cmd in commands[3:]] == ['--doctor', '--runtime-only', '--register-only']
+print('PASS: optional audio skips by default, gates resources before downloads, and delegates to the official installer.')

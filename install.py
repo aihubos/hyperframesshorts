@@ -10,6 +10,7 @@ import sys
 import tempfile
 from datetime import datetime
 from scripts.setup_voice import PROVIDERS, select_provider
+from scripts.setup_audio import DEFAULT_SOURCE, select_audio, setup_audio
 
 SOURCE = Path(__file__).resolve().parent
 VERSION = '0.8.35'
@@ -102,13 +103,25 @@ def main():
     mode.add_argument('--setup', action='store_true', help='Unified macOS/Windows setup: engine, skill and user-selected voice provider.')
     mode.add_argument('--setup-runtime', action='store_true', help='Optionally prepare a separate engine when no existing engine is available.')
     mode.add_argument('--skip-runtime', action='store_true', help='Explicit skill-only installation; this is already the default.')
+    mode.add_argument('--setup-audio', action='store_true', help='Only prepare optional Agent Audio; keep the installed shorts skill and voice settings.')
+    parser.add_argument('--audio-provider', choices=('none', 'agent-audio'), help='Optional local sound effects; defaults to none in noninteractive setup.')
+    parser.add_argument('--agent-audio-dir', type=Path, default=DEFAULT_SOURCE, help='Agent Audio source checkout to create or reuse.')
     parser.add_argument('--setup-voice', action='store_true', help='Prepare the selected voice provider after installing the skill.')
     parser.add_argument('--voice-provider', choices=PROVIDERS, help='User-selected narration: local, elevenlabs-free or elevenlabs-paid.')
     parser.add_argument('--elevenlabs-voice-id', help='Voice ID chosen by the user for ElevenLabs.')
     args = parser.parse_args()
     if (args.voice_provider or args.elevenlabs_voice_id) and not (args.setup or args.setup_voice):
         parser.error('음성 옵션은 --setup 또는 --setup-voice와 함께 사용하세요.')
+    if args.setup_audio and args.setup_voice:
+        parser.error('--setup-audio는 효과음만 설치합니다. 전체 설치는 --setup을 사용하세요.')
+    if args.audio_provider and not (args.setup or args.setup_audio):
+        parser.error('효과음 옵션은 --setup 또는 --setup-audio와 함께 사용하세요.')
     provider = select_provider(args.voice_provider) if args.setup or args.setup_voice else None
+    audio_provider = select_audio(args.audio_provider, args.agent_audio_dir) if args.setup or args.setup_audio else 'none'
+    if args.setup_audio:
+        if audio_provider == 'agent-audio':
+            setup_audio(args.agent_audio_dir)
+        return
     if provider == 'local' and args.elevenlabs_voice_id:
         parser.error('로컬 생성에는 ElevenLabs 목소리 ID를 지정하지 마세요.')
     if args.setup or args.setup_runtime:
@@ -125,6 +138,9 @@ def main():
         if args.elevenlabs_voice_id:
             command += ['--elevenlabs-voice-id', args.elevenlabs_voice_id]
         subprocess.run(command, check=True)
+    if audio_provider == 'agent-audio':
+        print('Prepare optional Agent Audio sound effects.', flush=True)
+        setup_audio(args.agent_audio_dir)
     print('Read the installed SKILL.md to apply it now. Restart your agent app for fresh automatic discovery.')
 
 
