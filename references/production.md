@@ -20,6 +20,22 @@ Hypit 프로젝트가 있으면 `assemble.py`, `film.svml`, `film.svs`, `build.s
 
 생성 자산의 도구·모델·파일 경로와 믹싱 결과를 제작정보에 기록한다. Agent Audio가 준비되지 않았으면 미생성으로 표시하고, 적합한 기존 소리가 있으면 재사용한다. Agent Audio의 런타임과 모델은 이 스킬에 포함하거나 자동 설치하지 않는다.
 
+## MiniMax Music 3 연결 (새 음악 요청 시)
+
+MLX Serve에 설치된 MiniMax Music 3는 음악 API로 호출한다. `GET /v1/models`에서 `music` 기능과 실제 모델 ID를 확인하고, 실행 중인 서버의 `POST /v1/audio/music-generations`를 사용한다. 로컬 주소 예시는 `http://127.0.0.1:11234`이며 실행 환경의 실제 주소를 확인한다.
+
+```json
+{
+  "model": "ddalcu/MiniMax-Music3-MLX-Serve-8bit",
+  "prompt": "Warm playful instrumental, soft marimba and gentle plucked strings",
+  "instrumental": true,
+  "duration_seconds": 3,
+  "seed": 42
+}
+```
+
+응답은 WAV 바이너리다. HTTP 성공과 WAV 형식을 확인한 후 영상별 `assets/audio/`의 새 파일에 저장한다. 반주에는 `instrumental: true`를 사용하고 `lyrics`를 함께 보내지 않는다. 생성 원본의 실제 길이와 최종 믹싱·반복 이음새를 확인한다. 필요한 효과음은 Agent Audio를 사용하고, MiniMax Music을 Agent Audio의 내장 모델로 표시하지 않는다. 음악 요청이 없으면 승인된 기본 BGM을 유지한다.
+
 ## 생성 전에 구도를 설계하기
 
 스토리보드에 각 장면의 목적, 피사체 행동, 촬영 거리, 각도, 배경, 카메라 움직임을 짧게 적는다. 이 차이를 각 생성 프롬프트에 명시하고, 모든 프롬프트에 같은 side profile / close-up / forest bokeh를 반복하지 않는다.

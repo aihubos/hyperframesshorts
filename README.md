@@ -91,6 +91,8 @@ Git이 없는 경우 GitHub의 **Code → Download ZIP**으로 받아 압축을 
 
 Agent Audio는 필수 의존성이 아닙니다. 필요한 소리가 있을 때만 별도 [설치 안내](https://github.com/AIEGOBOT/agent-audio/blob/main/INSTALL_AGENT.md)에 따라 로컬 런타임과 `audio-production` 스킬·MCP를 준비합니다. 모델 다운로드와 이용 약관 동의가 별도로 필요할 수 있으며, `hyperframesshorts` 설치 프로그램은 이를 자동으로 설치하지 않습니다. 준비된 환경에서는 `audio_status` 확인 후 `generate_audio`로 만든 WAV를 영상별 `assets/audio/`에 저장하고 편집에 넣습니다. 내레이션 방식은 유지하고 기본 BGM은 별도 요청이 없으면 유지합니다.
 
+새 배경음악을 요청했고 MiniMax Music 3가 MLX Serve에 설치되어 있으면 기존 로컬 음악 API를 활용할 수 있습니다. 모델 목록 확인 → WAV 생성 → 영상에 맞춘 믹싱 순서이며, 자세한 요청 형식은 [MiniMax Music 3 연결](references/production.md#minimax-music-3-연결-새-음악-요청-시)을 참고하세요.
+
 자막은 실제 발화 시점에 맞춥니다. 정렬에는 환경에 이미 있는 Whisper 계열/강제 정렬 도구를 활용할 수 있으며, 특정 정렬 패키지를 필수 설치하지는 않습니다. 사용할 수 없는 경우 직접 확인·조정한 범위를 기록합니다.
 
 ## 최근 제작 방식
