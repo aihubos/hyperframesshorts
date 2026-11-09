@@ -2,7 +2,7 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 const base=new URL('.',import.meta.url),get=f=>readFileSync(new URL(f,base),'utf8'),path=f=>decodeURIComponent(new URL(f,base).pathname);
-const a=JSON.parse(get('speech-alignment.json')),lead=.08,voiceDuration=+execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',path('assets/voicestudio.wav')],{encoding:'utf8'}),total=Math.ceil(voiceDuration+lead+1.2);
+const a=JSON.parse(get('speech-alignment.json')),lead=.08,voiceDuration=+execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',path('assets/narration.wav')],{encoding:'utf8'}),total=Math.ceil(voiceDuration+lead+1.2);
 const lines=a.lines.map(l=>({...l,start:l.start+lead,end:l.end+lead}));
 const captions=a.captions.map(c=>({...c,start:c.start+lead,end:c.end+lead}));
 const starts=lines.map((l,i)=>i?l.start-.07:0),dur=i=>(starts[i+1]??total)-starts[i];
@@ -27,7 +27,7 @@ anim+=`tl.fromTo('.newcell',{opacity:0,scale:.1,transformOrigin:'50% 50%'},{opac
 add('time',starts[8],dur(8),title('순간 복구가 아닙니다<br><em>몇 주에 걸친 재생</em>')+svg(`<path d="M170 1050H910" stroke="#7ca89f" stroke-width="10"/>${[0,1,2,3].map((n)=>`<circle cx="${190+n*230}" cy="1050" r="23" fill="#ffe36f"/>${txt(190+n*230,1150,['방출','조직 변화','새 장 형성','재생 진행'][n],34)}`).join('')}${txt(540,880,'시간이 필요합니다',66,'#fff')}${txt(540,1380,'종과 환경에 따라 속도가 다릅니다',39,'#badbd6')}`));
 combinedVideo('ending',3,starts[9],total,'버리고, 다시 만든다<br><strong>해삼의 생존 전략</strong>');
 for(let i=0;i<captions.length;i++){const c=captions[i];assert(c.end>c.start&&(!i||c.start>=captions[i-1].end));body+=`<div id="cap-${i}" class="clip caption" data-start="${c.start}" data-duration="${c.end-c.start}" data-track-index="5">${c.text}</div>`;}
-body+=`<audio id="voice" src="assets/voicestudio.wav" data-start="${lead}" data-duration="${voiceDuration}" data-track-index="7"></audio><audio id="music" src="assets/music.wav" data-start="0" data-duration="${total}" data-track-index="8"></audio>`;
+body+=`<audio id="voice" src="assets/narration.wav" data-start="${lead}" data-duration="${voiceDuration}" data-track-index="7"></audio><audio id="music" src="assets/music.wav" data-start="0" data-duration="${total}" data-track-index="8"></audio>`;
 // Short graphic transitions preserve the hook's immediacy.
 for(let i=1;i<starts.length;i++){add(`wipe-${i}`,starts[i],.15,'<div class="wipe"></div>',4);anim+=`tl.fromTo('#wipe-${i}',{opacity:.28},{opacity:0,duration:.15},${starts[i]});`;}
 anim+='window.__timelines={cucumber:tl};';
