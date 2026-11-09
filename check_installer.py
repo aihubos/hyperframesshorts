@@ -53,10 +53,25 @@ with tempfile.TemporaryDirectory() as scratch:
         installer.setup_runtime(root / 'unused', reuse_existing=True)
         assert not (root / 'unused').exists()
         assert [call.args[0] for call in run.call_args_list] == [['node', str(cli), '--version'], ['node', str(cli), 'browser', 'ensure']]
-    with patch.object(sys, 'argv', ['install.py', '--setup', '--voice-provider', 'local', '--skills-dir', str(root/'skills')]), patch.object(installer, 'setup_runtime') as engine, patch.object(installer, 'install_skill') as skill, patch.object(installer.subprocess, 'run') as voice:
+    with patch.object(sys, 'argv', ['install.py', '--setup', '--voice-provider', 'elevenlabs-free', '--skills-dir', str(root/'skills')]), patch.object(installer, 'setup_runtime') as engine, patch.object(installer, 'install_skill') as skill, patch.object(installer.subprocess, 'run') as voice:
         installer.main()
         assert engine.call_args.kwargs['reuse_existing'] is True
         skill.assert_called_once()
         assert voice.call_args.args[0][-3].endswith('scripts/setup_voice.py')
-        assert voice.call_args.args[0][-2:] == ['--provider', 'local']
-print('PASS: unified setup reuses the engine and invokes the shared skill/voice pipeline.')
+        assert voice.call_args.args[0][-2:] == ['--provider', 'elevenlabs-free']
+    with patch.object(installer.platform, 'system', return_value='Darwin'), patch.object(sys, 'argv', ['install.py', '--setup', '--voice-provider', 'elevenlabs-free', '--skills-dir', str(root/'skills')]), patch.object(installer, 'install_skill') as skill:
+        try:
+            installer.main()
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError('setup on a non-Linux machine must stop')
+        skill.assert_not_called()
+    with patch.object(sys, 'argv', ['install.py', '--setup', '--voice-provider', 'local', '--skills-dir', str(root/'skills')]):
+        try:
+            installer.main()
+        except SystemExit as exc:
+            assert exc.code == 2
+        else:
+            raise AssertionError('local voice provider must be rejected')
+print('PASS: unified setup reuses the engine and invokes the ElevenLabs voice pipeline.')

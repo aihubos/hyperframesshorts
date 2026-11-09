@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import subprocess
@@ -67,26 +68,26 @@ def existing_engine(runtime):
     return None
 
 
+def require_linux_cloud():
+    if platform.system() != 'Linux':
+        raise RuntimeError('이 설치는 원격 Linux 클라우드 컴퓨터에서 실행합니다. 학생의 Mac/Windows PC에서는 실행하지 마세요.')
+
+
 def setup_runtime(runtime, reuse_existing=False):
     for tool in ('node', 'ffmpeg', 'ffprobe'):
         if not shutil.which(tool):
-            raise RuntimeError(f'{tool} is missing. Install prerequisites using README.md, then rerun.')
+            raise RuntimeError(f'{tool} is missing. On this Linux cloud computer install Git, Python 3, Node.js 22+, FFmpeg and ffprobe as described in README.md, then rerun.')
     version = subprocess.check_output(['node', '--version'], text=True).strip()
     if int(version.lstrip('v').split('.')[0]) < 22:
-        raise RuntimeError('Node.js 22 or newer is required; see README.md.')
+        raise RuntimeError('Node.js 22 or newer is required on this Linux cloud computer; see README.md.')
     cli = existing_engine(runtime) if reuse_existing else None
     cli = cli or runtime / 'node_modules/hyperframes/bin/hyperframes.mjs'
     if not cli.exists():
         runtime.mkdir(parents=True, exist_ok=True)
-        npm = [shutil.which('npm')]
-        if not npm[0]:
-            raise RuntimeError('npm is missing. Install Node.js with npm, then rerun.')
-        if os.name == 'nt':
-            npm_cli = Path(npm[0]).parent / 'node_modules/npm/bin/npm-cli.js'
-            if not npm_cli.is_file():
-                raise RuntimeError('Cannot find npm-cli.js. Install the official Node.js distribution, then rerun.')
-            npm = ['node', str(npm_cli)]
-        subprocess.run(npm + ['install', '--prefix', str(runtime), '--save-exact', f'hyperframes@{VERSION}'], check=True)
+        npm = shutil.which('npm')
+        if not npm:
+            raise RuntimeError('npm is missing. Install Node.js 22 or newer with npm on this Linux cloud computer, then rerun.')
+        subprocess.run([npm, 'install', '--prefix', str(runtime), '--save-exact', f'hyperframes@{VERSION}'], check=True)
     else:
         print(f'Reusing existing engine: {cli}')
     subprocess.run(['node', str(cli), '--version'], check=True)
@@ -99,18 +100,18 @@ def main():
     parser.add_argument('--skills-dir', type=Path, help='Install into this skill parent directory (default: Codex only).')
     parser.add_argument('--runtime-dir', type=Path, default=Path.home() / '.local/share/hyperframes/runtime')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--setup', action='store_true', help='Unified macOS/Windows setup: engine, skill and user-selected voice provider.')
+    mode.add_argument('--setup', action='store_true', help='Linux cloud setup: engine, skill, and the selected ElevenLabs plan.')
     mode.add_argument('--setup-runtime', action='store_true', help='Optionally prepare a separate engine when no existing engine is available.')
     mode.add_argument('--skip-runtime', action='store_true', help='Explicit skill-only installation; this is already the default.')
-    parser.add_argument('--setup-voice', action='store_true', help='Prepare the selected voice provider after installing the skill.')
-    parser.add_argument('--voice-provider', choices=PROVIDERS, help='User-selected narration: local, elevenlabs-free or elevenlabs-paid.')
+    parser.add_argument('--setup-voice', action='store_true', help='Prepare the selected ElevenLabs plan after installing the skill.')
+    parser.add_argument('--voice-provider', choices=PROVIDERS, help='User-selected narration: elevenlabs-free or elevenlabs-paid.')
     parser.add_argument('--elevenlabs-voice-id', help='Voice ID chosen by the user for ElevenLabs.')
     args = parser.parse_args()
     if (args.voice_provider or args.elevenlabs_voice_id) and not (args.setup or args.setup_voice):
         parser.error('음성 옵션은 --setup 또는 --setup-voice와 함께 사용하세요.')
+    if args.setup or args.setup_runtime or args.setup_voice:
+        require_linux_cloud()
     provider = select_provider(args.voice_provider) if args.setup or args.setup_voice else None
-    if provider == 'local' and args.elevenlabs_voice_id:
-        parser.error('로컬 생성에는 ElevenLabs 목소리 ID를 지정하지 마세요.')
     if args.setup or args.setup_runtime:
         print('[1/3] Prepare Hyperframes (reuse existing engine when --setup is selected).', flush=True)
         setup_runtime(args.runtime_dir.expanduser().absolute(), reuse_existing=args.setup)
